@@ -79,7 +79,7 @@ $(document).ready(function() {
             alert('¡Cuenta creada con éxito! Bienvenido/a, ' + usuario.nombre + '.');
             
             // LÍNEA 61: Redirigir al login tras éxito
-            window.location.href = 'login.html';
+            window.location.href = '../login/login.html';
 
         } else {
             alert('Código incorrecto. El código de prueba es: SENA4');
@@ -90,6 +90,6 @@ $(document).ready(function() {
     
     // Función para el enlace "¿Ya tienes una cuenta?"
     window.irAlLogin = function() {
-        window.location.href = 'login.html';
+        window.location.href ='../login/login.html';
     };
 });

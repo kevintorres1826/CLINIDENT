@@ -18,10 +18,10 @@ function handleLogin() {
 
     // Lógica de redirección por rol
     const rutas = {
-        paciente: 'agenda.html',
-        odontologo: 'odontologo.html',
-        admin: 'odontologo.html',
-        recepcion: 'odontologo.html'
+        paciente:'../agenda cliente/index.html',
+        odontologo:'../odontologo/panel_medico.html',
+        admin: '../odontologo/panel_medico.html',
+        recepcion: '../odontologo/panel_medico.html',
     };
     
     window.location.href = rutas[rol] || 'odontologo.html';
@@ -97,7 +97,7 @@ function guardarNuevaPassword() {
 }
 
 function irARegistro() {
-    window.location.href = 'registro.html';
+    window.location.href = '../Registro/registro.html';
 }
 
 // ── Registro de Service Worker (PWA) ──
