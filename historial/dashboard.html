@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="estilos.css">
+</head>
+
+<body>
+
+<div class="main-wrapper">
+
+    <div class="sidebar">
+        <nav>
+            <ul>
+                <li><img src="logo.png" alt="Logo" style="width:150px;"></li>
+                <li>
+                    <a href="index.html">
+                        <button type="button" class="btn-sidebar">Registrar</button>
+                    </a>
+                </li>
+                <li>
+                    <a href="historial.html">
+                        <button type="button" class="btn-sidebar">Historial</button>
+                    </a>
+                </li>
+                <li>
+                    <a href="estadisticas.html">
+                        <button type="button" class="btn-sidebar">Estadísticas</button>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="dashboard-container">
+
+        <h1>Dashboard</h1>
+
+        <div class="stats">
+            <div class="card">
+                <h3>Total Pacientes</h3>
+                <span id="totalPacientes">0</span>
+            </div>
+            <div class="card">
+                <h3>Hoy</h3>
+                <span id="totalHoy">0</span>
+            </div>
+            <div class="card">
+                <h3>Asistencia</h3>
+                <span id="totalAsistencia">0%</span>
+            </div>
+        </div>
+
+        <div class="ultimos">
+            <h3>Últimos pacientes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="listaPacientes"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+let pacientes = JSON.parse(localStorage.getItem("pacientes")) || [];
+
+document.getElementById("totalPacientes").textContent = pacientes.length;
+
+// Fecha de hoy
+const hoy = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" });
+const registradosHoy = pacientes.filter(p => p.Fecha === hoy);
+document.getElementById("totalHoy").textContent = registradosHoy.length;
+
+// Asistencia (pacientes con estado Atendido)
+const atendidos = pacientes.filter(p => p.Estado === "Atendido").length;
+const porcentaje = pacientes.length > 0 ? Math.round((atendidos / pacientes.length) * 100) : 0;
+document.getElementById("totalAsistencia").textContent = porcentaje + "%";
+
+// Tabla últimos 5 pacientes
+const tbody = document.getElementById("listaPacientes");
+pacientes.slice(-5).reverse().forEach(p => {
+    const estadoClase = p.Estado === "Atendido" ? "badge-success" :
+                        p.Estado === "Pendiente" ? "badge-warning" : "badge-danger";
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+        <td>${p.Nombre} ${p.Apellido}</td>
+        <td>${p.Fecha || "—"}</td>
+        <td><span class="badge ${estadoClase}">${p.Estado || "—"}</span></td>
+    `;
+    tbody.appendChild(fila);
+});
+</script>
+
+</body>
+</html>

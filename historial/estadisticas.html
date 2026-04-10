@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Estadísticas</title>
+<link rel="stylesheet" href="estilos.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+<div class="main-wrapper">
+
+    <div class="sidebar">
+        <nav>
+            <ul>
+                <li><img src="logo.png" alt="Logo" style="width:150px;"></li>
+                <li><a href="index.html"><button type="button" class="btn-sidebar">Registrar</button></a></li>
+                <li><a href="dashboard.html"><button type="button" class="btn-sidebar">Dashboard</button></a></li>
+                <li><a href="historial.html"><button type="button" class="btn-sidebar">Historial</button></a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="estadisticas-container">
+
+        <h1>Estadísticas</h1>
+
+        <div class="graficos-grid">
+
+            <div class="grafico-card">
+                <h3>Pacientes por edad</h3>
+                <canvas id="graficoEdad"></canvas>
+            </div>
+
+            <div class="grafico-card">
+                <h3>Distribución por estado</h3>
+                <canvas id="graficoEstado"></canvas>
+            </div>
+
+            <div class="grafico-card grafico-ancho">
+                <h3>Registros por fecha</h3>
+                <canvas id="graficoFecha"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+const pacientes = JSON.parse(localStorage.getItem("pacientes")) || [];
+
+const colores = {
+    azul:    "rgba(45, 140, 240, 0.8)",
+    verde:   "rgba(74, 222, 128, 0.8)",
+    naranja: "rgba(250, 204, 21, 0.8)",
+    rojo:    "rgba(248, 113, 113, 0.8)",
+    morado:  "rgba(167, 139, 250, 0.8)",
+};
+
+const opcionesBase = {
+    responsive: true,
+    plugins: { legend: { labels: { color: "white" } } },
+    scales: {
+        x: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } },
+        y: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" }, beginAtZero: true }
+    }
+};
+
+// Gráfico 1 — Edad
+let menores = 0, adultos = 0;
+pacientes.forEach(p => { parseInt(p.Edad) < 18 ? menores++ : adultos++; });
+new Chart(document.getElementById("graficoEdad"), {
+    type: "bar",
+    data: {
+        labels: ["Menores de edad", "Adultos"],
+        datasets: [{ label: "Pacientes", data: [menores, adultos], backgroundColor: [colores.azul, colores.morado], borderWidth: 0, borderRadius: 6 }]
+    },
+    options: opcionesBase
+});
+
+// Gráfico 2 — Estado
+const conteoEstado = { Atendido: 0, Pendiente: 0, Ausente: 0 };
+pacientes.forEach(p => { if (conteoEstado[p.Estado] !== undefined) conteoEstado[p.Estado]++; });
+new Chart(document.getElementById("graficoEstado"), {
+    type: "doughnut",
+    data: {
+        labels: ["Atendido", "Pendiente", "Ausente"],
+        datasets: [{ data: [conteoEstado.Atendido, conteoEstado.Pendiente, conteoEstado.Ausente], backgroundColor: [colores.verde, colores.naranja, colores.rojo], borderWidth: 0 }]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: "white" } } } }
+});
+
+// Gráfico 3 — Registros por fecha
+const porFecha = {};
+pacientes.forEach(p => { const f = p.Fecha || "Sin fecha"; porFecha[f] = (porFecha[f] || 0) + 1; });
+const fechasOrdenadas = Object.keys(porFecha).sort();
+new Chart(document.getElementById("graficoFecha"), {
+    type: "line",
+    data: {
+        labels: fechasOrdenadas,
+        datasets: [{ label: "Registros", data: fechasOrdenadas.map(f => porFecha[f]), borderColor: colores.azul, backgroundColor: "rgba(45,140,240,0.15)", borderWidth: 2, pointBackgroundColor: colores.azul, fill: true, tension: 0.4 }]
+    },
+    options: opcionesBase
+});
+</script>
+</body>
+</html>

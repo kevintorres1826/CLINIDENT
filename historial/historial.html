@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Historial</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="estilos.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+<div class="main-wrapper">
+
+    <div class="sidebar">
+        <nav>
+            <ul>
+                <li><img src="logo.png" alt="Logo" style="width:150px;"></li>
+                <li><a href="index.html"><button type="button" class="btn-sidebar">Registrar</button></a></li>
+                <li><a href="dashboard.html"><button type="button" class="btn-sidebar">Dashboard</button></a></li>
+                <li><a href="estadisticas.html"><button type="button" class="btn-sidebar">Estadísticas</button></a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <section>
+        <h1>Historial de Pacientes</h1>
+
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; width:90%; flex-wrap:wrap; margin-left:auto; margin-right:auto;">
+            <input
+                type="text"
+                id="buscador"
+                placeholder="Buscar por nombre o diagnóstico..."
+                oninput="mostrarPacientes()"
+                style="flex:1; min-width:200px; padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; font-size:14px;"
+            >
+            <button onclick="exportarExcel()" class="btn-exportar btn-excel">Exportar Excel</button>
+            <button onclick="exportarPDF()" class="btn-exportar btn-pdf">Exportar PDF</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+                    <th>Edad</th>
+                    <th>Diagnóstico</th>
+                    <th>Tratamiento</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Editar</th>
+                    <th>Eliminar</th>
+                </tr>
+            </thead>
+            <tbody id="tablaPacientes"></tbody>
+        </table>
+    </section>
+
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1f1f1f; border:1px solid #555; border-radius:10px; padding:28px; width:380px; display:flex; flex-direction:column; gap:12px;">
+        <h2 style="margin:0 0 8px; text-align:center; color:white;">Editar Paciente</h2>
+        <input id="eNombre"      placeholder="Nombre"      style="padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px;">
+        <input id="eApellido"    placeholder="Apellido"    style="padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px;">
+        <input id="eTelefono"    placeholder="Teléfono"    style="padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px;">
+        <input id="eDireccion"   placeholder="Dirección"   style="padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px;">
+        <input id="eEdad"        placeholder="Edad"        style="padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px;">
+        <textarea id="eDiagnostico" rows="3" placeholder="Diagnóstico" style="padding:10px; background:rgba(29,30,30,0.8); color:white; border:1px solid #555; border-radius:5px; resize:vertical;"></textarea>
+        <textarea id="eTratamiento" rows="3" placeholder="Tratamiento" style="padding:10px; background:rgba(29,30,30,0.8); color:white; border:1px solid #555; border-radius:5px; resize:vertical;"></textarea>
+        <select id="eEstado" style="padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px;">
+            <option value="Atendido">Atendido</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Ausente">Ausente</option>
+        </select>
+        <div style="display:flex; gap:10px; margin-top:4px;">
+            <button onclick="guardarEdicion()" style="flex:1; padding:10px; background:#2D8CF0; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Guardar</button>
+            <button onclick="cerrarModal()"    style="flex:1; padding:10px; background:transparent; color:#aaa; border:1px solid #555; border-radius:5px; cursor:pointer;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ELIMINAR -->
+<div id="modalEliminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1f1f1f; border:1px solid #555; border-radius:10px; padding:28px; width:340px; display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:rgba(74,26,26,0.8); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                🗑️
+            </div>
+            <div>
+                <p style="margin:0; font-size:15px; font-weight:bold; color:white;">Eliminar paciente</p>
+                <p id="nombreEliminar" style="margin:0; font-size:13px; color:#aaa;"></p>
+            </div>
+        </div>
+        <p style="margin:0; font-size:14px; color:#aaa; line-height:1.5;">Esta acción no se puede deshacer. El registro del paciente será eliminado permanentemente.</p>
+        <div style="display:flex; gap:10px; margin-top:4px;">
+            <button onclick="cerrarModalEliminar()" style="flex:1; padding:10px; background:transparent; color:#aaa; border:1px solid #555; border-radius:5px; cursor:pointer; font-size:14px;">Cancelar</button>
+            <button onclick="confirmarEliminar()" style="flex:1; padding:10px; background:rgba(74,26,26,0.8); color:#f87171; border:1px solid #f87171; border-radius:5px; cursor:pointer; font-size:14px; font-weight:bold;">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let pacientes = JSON.parse(localStorage.getItem("pacientes")) || [];
+let indiceEditando = null;
+
+function getBadge(estado) {
+    if (estado === "Atendido") return `<span class="badge badge-success">Atendido</span>`;
+    if (estado === "Pendiente") return `<span class="badge badge-warning">Pendiente</span>`;
+    if (estado === "Ausente")   return `<span class="badge badge-danger">Ausente</span>`;
+    return `<span style="color:#aaa">—</span>`;
+}
+
+function mostrarPacientes() {
+    const busqueda = document.getElementById("buscador").value.toLowerCase();
+    const tabla = document.getElementById("tablaPacientes");
+    tabla.innerHTML = "";
+
+    const filtrados = pacientes.filter(p =>
+        (p.Nombre + " " + p.Apellido).toLowerCase().includes(busqueda) ||
+        (p.Diagnostico || "").toLowerCase().includes(busqueda)
+    );
+
+    if (filtrados.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="10" style="color:#aaa; padding:20px;">No se encontraron pacientes.</td></tr>`;
+        return;
+    }
+
+    filtrados.forEach((p) => {
+        const indexReal = pacientes.indexOf(p);
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td>${p.Nombre} ${p.Apellido}</td>
+            <td>${p.Telefono || "—"}</td>
+            <td>${p.Direccion || "—"}</td>
+            <td>${p.Edad || "—"}</td>
+            <td>${p.Diagnostico || "—"}</td>
+            <td>${p.Tratamiento || "—"}</td>
+            <td>${p.Fecha || "—"}</td>
+            <td>${getBadge(p.Estado)}</td>
+            <td><button class="btn-editar" onclick="abrirModal(${indexReal})">✏️</button></td>
+            <td><button class="btn-eliminar" onclick="eliminarPaciente(${indexReal})">🗑</button></td>
+        `;
+        tabla.appendChild(fila);
+    });
+}
+
+function abrirModal(index) {
+    indiceEditando = index;
+    const p = pacientes[index];
+    document.getElementById("eNombre").value      = p.Nombre || "";
+    document.getElementById("eApellido").value    = p.Apellido || "";
+    document.getElementById("eTelefono").value    = p.Telefono || "";
+    document.getElementById("eDireccion").value   = p.Direccion || "";
+    document.getElementById("eEdad").value        = p.Edad || "";
+    document.getElementById("eDiagnostico").value = p.Diagnostico || "";
+    document.getElementById("eTratamiento").value = p.Tratamiento || "";
+    document.getElementById("eEstado").value      = p.Estado || "Atendido";
+    document.getElementById("modalOverlay").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modalOverlay").style.display = "none";
+    indiceEditando = null;
+}
+
+function guardarEdicion() {
+    if (indiceEditando === null) return;
+    pacientes[indiceEditando] = {
+        ...pacientes[indiceEditando],
+        Nombre:      document.getElementById("eNombre").value,
+        Apellido:    document.getElementById("eApellido").value,
+        Telefono:    document.getElementById("eTelefono").value,
+        Direccion:   document.getElementById("eDireccion").value,
+        Edad:        document.getElementById("eEdad").value,
+        Diagnostico: document.getElementById("eDiagnostico").value,
+        Tratamiento: document.getElementById("eTratamiento").value,
+        Estado:      document.getElementById("eEstado").value,
+    };
+    localStorage.setItem("pacientes", JSON.stringify(pacientes));
+    cerrarModal();
+    mostrarPacientes();
+}
+
+let indiceEliminar = null;
+
+function eliminarPaciente(index) {
+    indiceEliminar = index;
+    const p = pacientes[index];
+    document.getElementById("nombreEliminar").textContent = p.Nombre + " " + p.Apellido;
+    document.getElementById("modalEliminar").style.display = "flex";
+}
+
+function cerrarModalEliminar() {
+    document.getElementById("modalEliminar").style.display = "none";
+    indiceEliminar = null;
+}
+
+function confirmarEliminar() {
+    if (indiceEliminar === null) return;
+    pacientes.splice(indiceEliminar, 1);
+    localStorage.setItem("pacientes", JSON.stringify(pacientes));
+    cerrarModalEliminar();
+    mostrarPacientes();
+}
+
+function exportarExcel() {
+    const datos = pacientes.map(p => ({
+        Nombre:      p.Nombre + " " + p.Apellido,
+        Teléfono:    p.Telefono || "—",
+        Dirección:   p.Direccion || "—",
+        Edad:        p.Edad || "—",
+        Diagnóstico: p.Diagnostico || "—",
+        Tratamiento: p.Tratamiento || "—",
+        Fecha:       p.Fecha || "—",
+        Estado:      p.Estado || "—",
+    }));
+    const ws = XLSX.utils.json_to_sheet(datos);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Pacientes");
+    XLSX.writeFile(wb, "historial_pacientes.xlsx");
+}
+
+function exportarPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Historial de Pacientes", 14, 16);
+    doc.autoTable({
+        startY: 22,
+        head: [["Nombre", "Teléfono", "Edad", "Diagnóstico", "Tratamiento", "Fecha", "Estado"]],
+        body: pacientes.map(p => [
+            p.Nombre + " " + p.Apellido,
+            p.Telefono || "—",
+            p.Edad || "—",
+            p.Diagnostico || "—",
+            p.Tratamiento || "—",
+            p.Fecha || "—",
+            p.Estado || "—",
+        ]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [45, 140, 240] },
+    });
+    doc.save("historial_pacientes.pdf");
+}
+
+mostrarPacientes();
+</script>
+</body>
+</html>
