@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINIDENT | Elite Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo" onclick="cambiarVista('menu')">CLINI<span>DENT</span></div>
+        <div style="font-weight: 800; color: var(--accent);">2026</div>
+    </nav>
+
+    <div class="container">
+        
+        <div id="view-menu" class="view active">
+            <h1 class="welcome-title">Bienvenido, <span style="color:var(--primary)">Nico</span></h1>
+            <p class="welcome-subtitle">Gestión de citas médicas de alta precisión.</p>
+            
+            <div class="menu-grid">
+                <div class="menu-item" onclick="prepararAgendado()">
+                    <i style="color: var(--accent);">📅</i>
+                    <h3>Asignar Cita</h3>
+                    <p style="color: #64748b;">Nuevos pacientes.</p>
+                </div>
+                <div class="menu-item" onclick="renderLista(); cambiarVista('lista')">
+                    <i style="color: var(--accent);">📋</i>
+                    <h3>Ver Citas</h3>
+                    <p style="color: #64748b;">Consultar registros.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-agendar" class="view glass-card">
+            <button class="btn-back" onclick="cancelarEdicion()">← VOLVER</button>
+            <h2 id="titulo-agendar" style="margin: 0 0 35px 0; color: var(--accent);">Configurar Agendamiento</h2>
+            
+            <div class="form-row">
+                <div class="input-group">
+                    <label class="label-form">ESPECIALISTA</label>
+                    <select id="doc" onchange="actualizarAgenda()">
+                        <option>Dr. Alberto Casas (General)</option>
+                        <option>Dra. Elena Marín (Ortodoncia)</option>
+                        <option>Dr. Camilo Ruiz (Cirugía)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="label-form">FECHA</label>
+                    <input type="date" id="fecha" onchange="actualizarAgenda()">
+                </div>
+            </div>
+            
+            <label class="label-form">HORARIOS DISPONIBLES</label>
+            <div id="grid-horas" class="grid-horas"></div>
+
+            <input type="hidden" id="edit-id" value="">
+            <input type="hidden" id="hora-seleccionada">
+            <button class="btn-confirm" id="btn-save" onclick="finalizarAgendado()">Confirmar Espacio Médico</button>
+        </div>
+
+        <div id="view-lista" class="view glass-card">
+            <button class="btn-back" onclick="cambiarVista('menu')">← VOLVER AL MENÚ</button>
+            <h2 style="margin: 0 0 30px 0; color: var(--accent);">Reporte de Citas</h2>
+            <div id="lista-citas"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✅ ¡Cita guardada con éxito!</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
