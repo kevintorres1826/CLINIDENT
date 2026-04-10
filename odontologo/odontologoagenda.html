@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINIDENT | Panel Médico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #0052FF;
+            --bg-doctor: #eceff1;
+            --card-white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-doctor);
+            color: var(--primary);
+        }
+
+        .navbar {
+            background: var(--primary);
+            padding: 15px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .filter-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-family: inherit;
+        }
+
+        .agenda-table {
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            border-collapse: collapse;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        .agenda-table th {
+            background: #f8fafc;
+            padding: 18px;
+            text-align: left;
+            border-bottom: 2px solid #edf2f7;
+            color: #64748b;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .agenda-table td {
+            padding: 18px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #e0e7ff;
+            color: var(--accent);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #94a3b8;
+        }
+
+        .refresh-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="font-weight: 800; font-size: 22px;">CLINIDENT <span>| Portal Médico</span></div>
+        <div id="reloj" style="font-weight: 600; opacity: 0.8;"></div>
+    </nav>
+
+    <div class="container">
+        <div class="header-panel">
+            <h1>Agenda de Consultas</h1>
+            <button class="refresh-btn" onclick="cargarAgenda()">🔄 Actualizar Citas</button>
+        </div>
+
+        <div class="filter-box">
+            <label><b>Filtrar por Especialista:</b></label>
+            <select id="filtro-doc" onchange="cargarAgenda()">
+                <option value="TODOS">Todos los doctores</option>
+                <option>Dr. Alberto Casas (General)</option>
+                <option>Dra. Elena Marín (Ortodoncia)</option>
+                <option>Dr. Camilo Ruiz (Cirugía)</option>
+            </select>
+        </div>
+
+        <table class="agenda-table">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Especialista</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-body">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        function cargarAgenda() {
+            const lista = JSON.parse(localStorage.getItem('clinident_db_final')) || [];
+            const filtro = document.getElementById('filtro-doc').value;
+            const tbody = document.getElementById('tabla-body');
+            
+            tbody.innerHTML = "";
+
+            // Filtrar y ordenar por fecha y hora
+            let citasFiltradas = lista;
+            if (filtro !== "TODOS") {
+                citasFiltradas = lista.filter(c => c.doc === filtro);
+            }
+
+            citasFiltradas.sort((a, b) => new Date(a.fecha + ' ' + a.hora) - new Date(b.fecha + ' ' + b.hora));
+
+            if (citasFiltradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No hay citas programadas en el sistema.</td></tr>`;
+                return;
+            }
+
+            citasFiltradas.forEach(c => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td style="font-weight:800; color:var(--accent);">${c.hora}</td>
+                    <td><b>Paciente Registrado</b></td>
+                    <td>${c.doc}</td>
+                    <td>${c.fecha}</td>
+                    <td><span class="status-badge">CONFIRMADA</span></td>
+                `;
+                tbody.appendChild(fila);
+            });
+        }
+
+        // Reloj en tiempo real
+        setInterval(() => {
+            const ahora = new Date();
+            document.getElementById('reloj').innerText = ahora.toLocaleString();
+        }, 1000);
+
+        // Cargar al iniciar
+        window.onload = cargarAgenda;
+    </script>
+</body>
+</html>

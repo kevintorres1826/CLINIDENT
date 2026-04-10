@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CLINIDENT | Panel Médico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #0ea5e9; /* Un azul médico más claro */
+            --bg: #f8fafc;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            width: 100%;
+            background: white;
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 50px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .welcome-section h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .welcome-section p { color: #64748b; font-size: 1.1rem; }
+
+        .menu-doctor {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            width: 90%;
+            max-width: 900px;
+        }
+
+        .card-opcion {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        }
+
+        .card-opcion:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(14, 165, 233, 0.1);
+        }
+
+        .icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        h3 { font-size: 1.5rem; margin: 15px 0; }
+        p.desc { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+
+        .btn-logout {
+            margin-top: 50px;
+            background: none;
+            border: 2px solid #e2e8f0;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="font-weight: 800; font-size: 24px;">CLINI<span>DENT</span></div>
+    </nav>
+
+    <div class="welcome-section">
+        <h1>Panel del Especialista</h1>
+        <p>Bienvenido, <b>Dr. Alberto Casas</b></p>
+    </div>
+
+    <div class="menu-doctor">
+        <div class="card-opcion" onclick="window.location.href='odontologoagenda.html'">
+            <span class="icon">📅</span>
+            <h3>Mi Agenda Diaria</h3>
+            <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de consulta.</p>
+        </div>
+
+        <div class="card-opcion" onclick="window.location.href='historial.html'">
+            <span class="icon">📁</span>
+            <h3>Historial Clínico</h3>
+            <p class="desc">Accede a las fichas técnicas, radiografías y antecedentes de todos tus pacientes.</p>
+        </div>
+    </div>
+
+    
+
+    <button class="btn-logout" onclick="window.location.href='login.html'">Cerrar Sesión Segura</button>
+
+</body>
+</html>
