@@ -41,16 +41,15 @@
 
         .menu-doctor {
             display: grid;
-            /* Ajustado a 3 columnas para los 3 botones principales */
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            width: 95%;
-            max-width: 1100px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            width: 90%;
+            max-width: 850px;
         }
 
         .card-opcion {
             background: white;
-            padding: 35px 25px;
+            padding: 50px 30px;
             border-radius: 30px;
             text-align: center;
             cursor: pointer;
@@ -69,31 +68,37 @@
         }
 
         .icon {
-            font-size: 45px;
-            margin-bottom: 15px;
+            font-size: 60px;
+            margin-bottom: 20px;
             display: block;
         }
 
-        h3 { font-size: 1.3rem; margin: 10px 0; }
-        p.desc { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+        h3 { font-size: 1.6rem; margin: 15px 0; }
+        p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
 
         .btn-logout {
-            margin-top: 50px;
-            margin-bottom: 30px;
+            margin-top: 60px;
             background: none;
             border: 2px solid #e2e8f0;
-            padding: 10px 25px;
+            padding: 12px 30px;
             border-radius: 12px;
             font-weight: 700;
             color: #64748b;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #fee2e2;
+            color: #ef4444;
+            border-color: #fecaca;
         }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <div style="font-weight: 800; font-size: 24px; letter-spacing: -1px;">CLINI<span style="color:var(--accent)">DENT</span></div>
+        <div style="font-weight: 800; font-size: 24px;">CLINI<span style="color:var(--accent)">DENT</span></div>
     </nav>
 
     <div class="welcome-section">
@@ -104,20 +109,14 @@
     <div class="menu-doctor">
         <div class="card-opcion" onclick="window.location.href='odontologoagenda.html'">
             <span class="icon">📅</span>
-            <h3>Mi Agenda Diaria</h3>
-            <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de consulta.</p>
+            <h3>Ver Citas</h3>
+            <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de atención.</p>
         </div>
 
-        <div class="card-opcion" onclick="window.location.href='historial.html'">
+        <div class="card-opcion" onclick="window.location.href='DIRECCION_DE_TU_COMPAÑERO.html'">
             <span class="icon">📁</span>
-            <h3>Historial Clínico</h3>
-            <p class="desc">Accede a las fichas técnicas, radiografías y antecedentes de todos tus pacientes.</p>
-        </div>
-
-        <div class="card-opcion" onclick="window.location.href='AQUÍ_PONES_TU_URL.html'">
-            <span class="icon">📝</span>
-            <h3>Registrar Atención</h3>
-            <p class="desc">Carga el diagnóstico, tratamiento realizado y observaciones de la cita actual.</p>
+            <h3>Registro e Historial</h3>
+            <p class="desc">Crea nuevas fichas médicas y accede a los antecedentes clínicos de todos tus pacientes.</p>
         </div>
     </div>
 
