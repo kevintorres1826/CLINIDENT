@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Primera web</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="estilos.css">
+</head>
+
+<body>
+
+<div class="main-wrapper">
+
+    <div class="sidebar">   
+        <nav>
+            <ul>
+                <li><img src="logo.png" alt="Logo" style="width:150px;"></li>
+                <li>
+                    <a href="dashboard.html">
+                        <button type="button" class="btn-sidebar">Dashboard</button>
+                    </a>
+                </li>
+                <li>
+                    <a href="historial.html">
+                        <button type="button" class="btn-sidebar">Historial</button>
+                    </a>
+                </li>
+                <li>
+                    <a href="estadisticas.html">
+                        <button type="button" class="btn-sidebar">Estadísticas</button>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <form id="formPaciente">
+        <input type="text" id="Nombre" name="Nombre" placeholder="Nombre del paciente">
+        <input type="text" id="Apellido" name="Apellido" placeholder="Apellido">
+        <input type="text" id="Telefono" name="Telefono" placeholder="Teléfono">
+        <input type="text" id="Direccion" name="Direccion" placeholder="Dirección">
+        <input type="text" id="Edad" name="Edad" placeholder="Edad">
+        <textarea rows="10" id="Diagnostico" name="Diagnostico" placeholder="Diagnostico del paciente"></textarea>
+        <textarea rows="10" id="Tratamiento" name="Tratamiento" placeholder="Tratamiento"></textarea>
+
+        <!-- NUEVO: selector de estado -->
+        <select id="Estado" name="Estado">
+            <option value="Atendido">Atendido</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Ausente">Ausente</option>
+        </select>
+
+        <input type="submit" value="Registrar">
+    </form>
+
+</div>
+
+<script>
+let form = document.querySelector("form");
+
+form.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    let pacientes = JSON.parse(localStorage.getItem("pacientes")) || [];
+
+    // Fecha de hoy en formato DD/MM
+    const hoy = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" });
+
+    let nuevoPaciente = {
+        Nombre: form.Nombre.value,
+        Apellido: form.Apellido.value,
+        Telefono: form.Telefono.value,
+        Direccion: form.Direccion.value,
+        Edad: form.Edad.value,
+        Diagnostico: form.Diagnostico.value,
+        Tratamiento: form.Tratamiento.value,
+        Estado: form.Estado.value,   // NUEVO
+        Fecha: hoy                   // NUEVO
+    };
+
+    pacientes.push(nuevoPaciente);
+    localStorage.setItem("pacientes", JSON.stringify(pacientes));
+    form.reset();
+    mostrarNotificacion("Paciente registrado correctamente");
+});
+function mostrarNotificacion(mensaje) {
+    const notif = document.createElement("div");
+    notif.textContent = mensaje;
+    notif.style.cssText = `
+        position: fixed;
+        top: 24px;
+        left: 50%;
+    transform: translateX(-50%);
+        background: rgba(26,74,46,0.95);
+        color: #4ade80;
+        border: 1px solid #4ade80;
+        padding: 14px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 9999;
+        transition: opacity 0.5s;
+    `;
+    document.body.appendChild(notif);
+    setTimeout(() => { notif.style.opacity = "0"; }, 2500);
+    setTimeout(() => { notif.remove(); }, 3000);
+}
+</script>
+
+</body>
+</html>
