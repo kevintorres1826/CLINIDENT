@@ -1,0 +1,303 @@
+/* =====================
+   RESET & BASE
+===================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* =====================
+   FONDO ANIMADO
+===================== */
+body {
+  background: linear-gradient(
+    270deg,
+    #006eff,
+    #1e3a8a,
+    #0071db,
+    #1e3a8a
+  );
+  background-size: 300% 300%;
+  animation: fondoAnimado 14s ease-in-out infinite;
+  padding: 30px;
+  color: #1e293b;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.06), transparent 40%);
+  pointer-events: none;
+}
+
+@keyframes fondoAnimado {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* =====================
+   LAYOUT
+===================== */
+.container {
+  max-width: 1100px;
+  margin: auto;
+}
+
+/* =====================
+   HEADER
+===================== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.header img {
+  width: 140px;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+}
+
+.header h1 {
+  flex: 1;
+  text-align: center;
+  color: white;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+/* =====================
+   TÍTULOS
+===================== */
+h2 {
+  margin-bottom: 15px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* =====================
+   CARDS / SECCIONES
+===================== */
+.section {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 25px;
+  border-radius: 16px;
+  margin-bottom: 25px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  backdrop-filter: blur(10px);
+  transition: all .3s ease;
+}
+
+.section:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+}
+
+/* =====================
+   GRID
+===================== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+/* =====================
+   FORMULARIO
+===================== */
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  margin-bottom: 8px;
+  transition: all .25s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  transform: scale(1.02);
+  background: white;
+}
+
+/* =====================
+   BOTONES
+===================== */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-weight: 600;
+  margin-right: 10px;
+  margin-top: 10px;
+  transition: all .25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+button:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+/* Efecto brillo */
+button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: 0.5s;
+}
+
+button:hover::before {
+  left: 100%;
+}
+
+/* Variantes de color */
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: white;
+}
+
+.btn-gray {
+  background: #e2e8f0;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+}
+
+/* =====================
+   TABLA
+===================== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.table th {
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+}
+
+.table th, .table td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table tbody tr {
+  transition: all .2s ease;
+}
+
+.table tbody tr:hover {
+  background: #dbeafe;
+  transform: scale(1.01);
+}
+
+/* =====================
+   TOTALES
+===================== */
+.total-big {
+  font-size: 24px;
+  font-weight: bold;
+  color: #16a34a;
+}
+
+.total-box {
+  background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+  padding: 18px;
+  border-radius: 14px;
+  margin-top: 18px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* =====================
+   ALERTA
+===================== */
+.alert {
+  background: #dcfce7;
+  color: #166534;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 15px;
+  display: none;
+}
+
+/* =====================
+   MODALES
+===================== */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.modal {
+  background: white;
+  width: 750px;
+  padding: 30px;
+  border-radius: 16px;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  animation: fadeIn .3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================
+   FACTURA
+===================== */
+.factura-header {
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 20px;
+}
