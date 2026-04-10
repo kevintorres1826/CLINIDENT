@@ -23,24 +23,20 @@
     <h2>Datos del Paciente</h2>
 
     <div class="grid">
-
       <div>
         <label>Seleccionar Paciente</label>
         <select id="selectPaciente" onchange="seleccionarPaciente()">
           <option value="">Seleccione</option>
         </select>
       </div>
-
       <div>
         <label>Nombre</label>
         <input id="nombre">
       </div>
-
       <div>
         <label>Documento</label>
         <input id="documento">
       </div>
-
       <div>
         <label>Odontólogo</label>
         <select id="doctor" onchange="actualizarTratamientos()">
@@ -49,7 +45,6 @@
           <option>Dra. Laura Sánchez - Odontología General</option>
         </select>
       </div>
-
     </div>
 
     <button class="btn-gray"    onclick="crearPaciente()">Nuevo Paciente</button>
@@ -57,8 +52,25 @@
     <button class="btn-gray"    onclick="historialPaciente()">Historial del Paciente</button>
     <button class="btn-primary" onclick="crearConsulta()">Crear Consulta</button>
     <button class="btn-danger"  onclick="nuevaConsulta()">Nueva Consulta</button>
+    <button class="btn-warning" onclick="verInasistencias()">⚠ Inasistencias</button>
+    <button id="btnGuardarInasistencia" onclick="guardarInasistenciaDirecta()" class="btn-danger" style="display:none;">
+  ⚠ Guardar Inasistencia
+</button>
 
     <div class="alert" id="consultaOK">✔ Consulta Activa</div>
+
+    <!-- BLOQUE ASISTENCIA (visible solo cuando hay consulta activa) -->
+    <div id="bloqueAsistencia" style="display:none; margin-top:18px;">
+      <label>¿El paciente asistió a la cita?</label>
+      <div class="asistencia-opciones">
+        <button class="btn-asistencia activo" id="btnSi" onclick="setAsistencia(true)">✔ Sí asistió</button>
+        <button class="btn-asistencia"        id="btnNo" onclick="setAsistencia(false)">✗ No asistió</button>
+      </div>
+      <div id="motivoInasistenciaBox" style="display:none; margin-top:10px;">
+        <label>Motivo de inasistencia</label>
+        <input id="motivoInasistencia" placeholder="Ej: No avisó, emergencia, reprogramó...">
+      </div>
+    </div>
 
     <label style="margin-top:15px;">Diagnóstico</label>
     <textarea id="diagnostico" rows="3"></textarea>
@@ -67,7 +79,6 @@
 
   <!-- SECCIÓN TRATAMIENTOS -->
   <div class="section">
-
     <h2>Tratamientos</h2>
 
     <select id="listaTratamientos"></select>
@@ -87,31 +98,20 @@
     </table>
 
     <div class="total-box">
-
       <label>Descuento (%)</label>
       <input type="number" id="descuento" value="0" min="0" max="100" oninput="calcularTotal()">
-
       <label>Impuesto (%)</label>
       <input type="number" id="impuesto" value="0" min="0" max="100" oninput="calcularTotal()">
-
       <p>Subtotal: <strong id="subtotal">$0.00</strong></p>
       <p class="total-big">TOTAL: $<span id="total">0.00</span></p>
-
     </div>
-
   </div>
 
   <!-- SECCIÓN FACTURA Y PAGO -->
   <div class="section">
-
     <h2>Factura y Pago</h2>
-
-    <button class="btn-success" onclick="emitirFactura()">
-      Confirmar y registrar pago
-    </button>
-
-    <button class="btn-gray" onclick="verPagos()">Ver Pagos</button>
-
+    <button class="btn-success" onclick="emitirFactura()">Confirmar y registrar pago</button>
+    <button class="btn-gray"    onclick="verPagos()">Ver Pagos</button>
   </div>
 
   <!-- MODAL FACTURA -->
@@ -124,9 +124,13 @@
     <div class="modal" id="contenidoPagos"></div>
   </div>
 
+  <!-- MODAL INASISTENCIAS -->
+  <div class="modal-bg" id="modalInasistencias">
+    <div class="modal" id="contenidoInasistencias"></div>
+  </div>
+
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
