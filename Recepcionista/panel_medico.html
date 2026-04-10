@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CLINIDENT | Panel Médico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="panel_medico.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo-container">CLINI<span class="accent-text">DENT</span></div>
+    </nav>
+
+    <div class="welcome-section">
+        <h1>Panel del Especialista</h1>
+        <p>Bienvenido, <b>Dr. Alberto Casas</b></p>
+    </div>
+
+    <div class="menu-doctor">
+        <div class="card-opcion" onclick="window.location.href='odontologoagenda.html'">
+            <span class="icon">📅</span>
+            <h3>Ver Citas</h3>
+            <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de atención.</p>
+        </div>
+    <div class="card-opcion" onclick="window.location.href='../Facturacion/index.html'">
+        <span class="icon">💳</span>
+        <h3>Facturación</h3>
+        <p class="desc">Gestiona pagos, genera facturas y revisa los cobros realizados a los pacientes.</p>
+    </div>
+        <div class="card-opcion" onclick="window.location.href='Historial/Historial.html'">
+            <span class="icon">📁</span>
+            <h3>Registro e Historial</h3>
+            <p class="desc">Crea nuevas fichas médicas y accede a los antecedentes clínicos de todos tus pacientes.</p>
+        </div>
+    </div>
+
+    <button class="btn-logout" onclick="window.location.href='login.html'">Cerrar Sesión Segura</button>
+</body>
+</html>
