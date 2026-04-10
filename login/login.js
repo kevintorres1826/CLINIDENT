@@ -97,7 +97,7 @@ function guardarNuevaPassword() {
 }
 
 function irARegistro() {
-    window.location.href = 'registro.html';
+    window.location.href = '../Registro/registro.html';
 }
 
 // ── Registro de Service Worker (PWA) ──
