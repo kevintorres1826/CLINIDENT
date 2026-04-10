@@ -1,6 +1,6 @@
 $(document).ready(function() {
 
-    // --- 1. FUNCIONES DE INTERFAZ xs--- <!-- y -->
+    // --- 1. FUNCIONES DE INTERFAZ ---
 
     $(document).on('click', '.toggle-password', function() {
         const input = $(this).siblings('input');
@@ -78,11 +78,18 @@ $(document).ready(function() {
 
             alert('¡Cuenta creada con éxito! Bienvenido/a, ' + usuario.nombre + '.');
             
-            // Redirigir al login (cambia la ruta si es necesario)
-            window.location.href = 'index.html';
+            // LÍNEA 61: Redirigir al login tras éxito
+            window.location.href = 'login.html';
 
         } else {
             alert('Código incorrecto. El código de prueba es: SENA4');
         }
+    };
+
+    // --- 4. NAVEGACIÓN ---
+    
+    // Función para el enlace "¿Ya tienes una cuenta?"
+    window.irAlLogin = function() {
+        window.location.href = 'login.html';
     };
 });

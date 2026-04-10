@@ -1,0 +1,207 @@
+:root {
+  --azul-oscuro: #0f172a;
+  --azul: #2563eb;
+  --azul-claro: #60a5fa;
+  --blanco: #ffffff;
+  --error: #ef4444;
+  --verde: #3aa6a0;
+}
+
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  font-family: 'Plus Jakarta Sans', sans-serif; 
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(270deg, #1d1d63, #1e3a8a, #0084ff, #1e3a8a);
+  background-size: 300% 300%;
+  animation: fondoAnimado 14s ease-in-out infinite;
+  color: var(--azul-oscuro);
+  overflow: hidden;
+}
+
+@keyframes fondoAnimado {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  animation: fadeIn 0.45s ease;
+}
+.screen.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--blanco);
+  padding: 40px;
+  border-radius: 20px;
+  width: 360px;
+  text-align: center;
+  color: var(--azul-oscuro);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+}
+
+.card-glass {
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(20px);
+  padding: 40px 30px;
+  border-radius: 20px;
+  width: 360px;
+  text-align: center;
+  color: var(--blanco);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+}
+
+.card h2, .card-glass h2 {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.card p, .card-glass p {
+  font-size: 0.9rem;
+  opacity: 0.75;
+  margin-bottom: 18px;
+}
+
+.card img { margin-bottom: 12px; }
+
+/* ── INPUTS ── */
+.input-group {
+  text-align: left;
+  margin-bottom: 14px;
+}
+label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+input, select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  margin-top: 5px;
+  outline: none;
+  background: #f8fafc;
+  color: var(--azul-oscuro);
+  font-size: 0.95rem;
+  transition: 0.25s;
+}
+input:focus, select:focus {
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
+  background: #fff;
+  border-color: var(--azul);
+}
+input::placeholder { color: #9ca3af; }
+
+/* Glass inputs */
+.card-glass input {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+}
+.card-glass input::placeholder { color: #ddd; }
+.card-glass input:focus {
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.35);
+  background: rgba(255,255,255,0.25);
+}
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--azul), var(--azul-claro));
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.28s;
+}
+.btn:hover {
+  transform: translateY(-2px) scale(1.025);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.choice-link {
+  display: block;
+  margin-top: 14px;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--azul), var(--azul-claro));
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.28s;
+  border: none;
+  width: 100%;
+  font-size: 0.95rem;
+}
+.choice-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+/* ── LINKS / TEXT ── */
+.link-text {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: #64748b;
+  cursor: pointer;
+}
+.link-text span {
+  color: var(--azul);
+  font-weight: 700;
+  transition: 0.2s;
+}
+.link-text span:hover { text-decoration: underline; opacity: 0.8; }
+
+.back-link {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.back-link:hover { color: white; }
+
+.back-link-dark {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: #64748b;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.back-link-dark:hover { color: var(--azul); }
+
+/* ── ERROR ── */
+.error-msg {
+  color: var(--error);
+  margin-top: 10px;
+  display: none;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+select option { color: black; background: white; }

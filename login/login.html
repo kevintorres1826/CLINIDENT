@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINIDENT | Acceso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+    <div class="screen active" id="screen-login">
+        <div class="card">
+            <img src="clinident_logo.png" width="72" alt="Logo" onerror="this.style.display='none'">
+            <h2>Iniciar Sesión</h2>
+            <p style="margin-bottom:22px;">Bienvenido de nuevo</p>
+
+            <div class="input-group">
+                <label>Correo</label>
+                <input type="text" id="login-user" placeholder="usuario@clinident.com">
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-pass" placeholder="••••••••">
+            </div>
+            <div class="input-group">
+                <label>Acceder como</label>
+                <select id="login-role">
+                    <option value="paciente">Paciente</option>
+                    <option value="odontologo">Odontólogo</option>
+                    <option value="recepcion">Recepción</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+
+            <button class="btn" onclick="handleLogin()">Entrar</button>
+
+            <p class="link-text" onclick="go('screen-recuperar')" style="margin-top:10px;">
+                ¿Olvidaste tu contraseña? <span>Recupérala aquí</span>
+            </p>
+            <p class="link-text" onclick="irARegistro()">
+                ¿No tienes cuenta? <span>Créala aquí</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="screen" id="screen-recuperar">
+        <div class="card">
+            <h2>Recuperar contraseña</h2>
+            <p>Elige cómo deseas recuperarla</p>
+
+            <button class="choice-link" onclick="go('screen-correo')">📧 Recuperar con correo</button>
+            <button class="choice-link" onclick="go('screen-telefono')">📱 Recuperar con teléfono</button>
+
+            <p class="back-link-dark" onclick="go('screen-login')">← Volver al inicio</p>
+        </div>
+    </div>
+
+    <div class="screen" id="screen-correo">
+        <div class="card">
+            <h2>Recuperar por correo</h2>
+            <p>Ingresa tu correo registrado</p>
+
+            <div class="input-group">
+                <label>Correo</label>
+                <input type="email" id="correo-input" placeholder="usuario@clinident.com">
+            </div>
+
+            <button class="btn" onclick="enviarCodigo('correo')">Enviar código</button>
+            <p class="back-link-dark" onclick="go('screen-recuperar')">← Volver</p>
+        </div>
+    </div>
+
+    <div class="screen" id="screen-telefono">
+        <div class="card">
+            <h2>Recuperar por teléfono</h2>
+            <p>Ingresa tu número registrado</p>
+
+            <div class="input-group">
+                <label>Teléfono</label>
+                <input type="tel" id="telefono-input" placeholder="3001234567">
+            </div>
+
+            <button class="btn" onclick="enviarCodigo('telefono')">Enviar código</button>
+            <p class="back-link-dark" onclick="go('screen-recuperar')">← Volver</p>
+        </div>
+    </div>
+
+    <div class="screen" id="screen-verificacion">
+        <div class="card-glass">
+            <h2>Código de verificación</h2>
+            <p id="verif-subtitle">Ingresa el código enviado a tu correo</p>
+
+            <input type="text" id="codigo" placeholder="Código de 6 dígitos" maxlength="6">
+
+            <button class="btn" onclick="verificarCodigo()">Verificar</button>
+
+            <p id="error-verif" class="error-msg">⚠️ Código incorrecto. Intenta de nuevo.</p>
+            <p class="back-link" onclick="go('screen-recuperar')">← Volver a opciones</p>
+        </div>
+    </div>
+
+    <div class="screen" id="screen-nueva-pass">
+    <div class="card">
+        <h2>Crear nueva contraseña</h2>
+        <p>Asegúrate de que sea una clave segura</p>
+
+        <div class="input-group">
+            <label>Nueva contraseña</label>
+            <input type="password" id="p1" placeholder="••••••••">
+        </div>
+
+        <div class="input-group">
+            <label>Confirmar contraseña</label>
+            <input type="password" id="p2" placeholder="••••••••">
+        </div>
+
+        <button class="btn" onclick="guardarNuevaPassword()">Guardar contraseña</button>
+        
+        <p id="error-pass" class="error-msg">⚠️ Las contraseñas no coinciden</p>
+        <p class="back-link-dark" onclick="go('screen-login')">Cancelar y volver</p>
+    </div>
+</div>
+
+    <script src="login.js"></script>
+</body>
+</html>
