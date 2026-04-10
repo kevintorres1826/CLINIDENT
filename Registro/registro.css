@@ -1,14 +1,14 @@
 /* */
 
 :root {
-    --primary: #1186e6;
+    --primary: #0e77ce;
     --success: #27AE60;
     --bg-glass: rgba(255, 255, 255, 0.95);
     --disabled: #bdc3c7;
 }
 
 body {
-    background: linear-gradient(270deg, #ff0000, #1e3a8a, #0071db, #1e3a8a);
+    background: linear-gradient(270deg, #ff0000, #0e45dd, #1079db, #113db6);
     background-size: 300% 300%;
     animation: fondoAnimado 14s ease-in-out infinite;
     padding: 30px;
@@ -33,7 +33,7 @@ body::after {
     content: "";
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.06), transparent 40%);
+    background: radial-gradient(circle at 70% 30%, rgba(61, 47, 47, 0.06), transparent 40%);
     pointer-events: none;
 }
 
@@ -42,7 +42,7 @@ body::after {
 
 .overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 254, 254, 0.4); z-index: -1;
+    background: rgba(77, 50, 50, 0.4); z-index: -1;
 }
 
 .register-card {
