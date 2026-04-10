@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+
+<html lang="es"> <head>  <!-- y -->
+    
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Clínica - Clinident</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="logo-container">
+        <img src="C:\Users\APRENDIZ\Downloads\clinident-removebg-preview.png" alt="Logo">
+    </div>
+
+    <div class="wallpaper"></div>
+    <div class="overlay"></div>
+
+    <div class="modal-overlay" id="modalLegal">
+        <div class="modal-content">
+            <h3>Política de Tratamiento de Información Personal</h3>
+            <p>
+            <b>CLINIDENT</b>, en cumplimiento de la <b>Ley 1581 de 2012</b> y el Decreto 1377 de 2013, informa a sus usuarios su política para el tratamiento de datos personales:</p>
+            <h4>1. Finalidad del Tratamiento</h4>
+            <p>Los datos personales recolectados serán utilizados para: gestión de citas odontológicas, creación de historias clínicas, contacto para seguimiento de tratamientos, envío de recordatorios y cumplimiento de obligaciones legales con las entidades de salud en Colombia.</p>
+            
+            <h4>2. Derechos del Titular</h4>
+            <p>Usted, como titular de los datos, tiene derecho a: conocer, actualizar, rectificar y suprimir su información personal. Asimismo, puede revocar la autorización otorgada para el tratamiento de sus datos cuando no se respeten los principios, derechos y garantías constitucionales y legales.</p>
+            
+            <h4>3. Protección de Datos Sensibles</h4>
+            <p>Dada la naturaleza de nuestra actividad, CLINIDENT podrá recolectar datos sensibles relacionados con su estado de salud. El usuario no está obligado a autorizar el tratamiento de estos datos, sin embargo, su negativa podría imposibilitar la prestación de los servicios de salud solicitados.</p>
+            
+            <h4>4. Seguridad</h4>
+            <p>Contamos con medidas técnicas, humanas y administrativas necesarias para otorgar seguridad a los registros, evitando su adulteración, pérdida, consulta, uso o acceso no autorizado o fraudulento.</p>
+            
+            <button class="btn-main" onclick="cerrarModal()">He leído y acepto los términos</button>
+        </div>
+    </div>
+    <div class="register-card">
+        <h1 class="brand-title">CLINIDENT</h1>
+        
+        <div id="step-1">
+            <h2 style="color: #666; margin-top: 0; font-weight: 400; font-size: 18px;">Crear Cuenta</h2>
+            <div class="form-grid">
+                <div class="input-box">
+                    <label>Nombre</label>
+                    <input type="text" id="nom" placeholder="Ej: Juan">
+                </div>
+                <div class="input-box">
+                    <label>Apellido</label>
+                    <input type="text" id="ape" placeholder="Ej: Pérez">
+                </div>
+                <div class="input-box full-width">
+                    <label>Tu Correo</label>
+                    <input type="email" id="email" placeholder="usuario@correo.com">
+                </div>
+                <div class="input-box full-width">
+                    <label>Teléfono Celular</label>
+                    <input type="tel" id="tel" placeholder="300 123 4567" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div class="input-box">
+                    <label>Contraseña</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="pass" placeholder="********">
+                        <i class="fa-solid fa-eye toggle-password" onclick="verPass('pass', this)"></i>
+                    </div>
+                </div>
+                <div class="input-box">
+                    <label>Confirmar</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="conf" placeholder="********">
+                        <i class="fa-solid fa-eye toggle-password" onclick="verPass('conf', this)"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-policy">
+                <input type="checkbox" id="acepto-datos" onchange="validarBoton()">
+                <p>Autorizo a <b>CLINIDENT</b> el tratamiento de mis datos personales... <span onclick="abrirModal()">Politica de Privacidad</span>.</p>
+            </div>
+
+            <button class="btn-main" id="btn-envio" onclick="simularEnvio()" disabled>Obtener Código</button>
+            
+            <div class="footer-link">
+                ¿Ya tienes una cuenta? <a href="/">Inicia sesión aquí</a>
+            </div>
+
+            <div id="loader" style="display:none; margin-top:10px;">
+                <p style="color:var(--primary); font-size:12px;">Procesando registro...</p>
+            </div>
+        </div>
+
+        <div id="step-2">
+            <h4 style="color: var(--success);">Ingresa el código enviado a tu correo</h4>
+            <input type="text" id="input-codigo" style="text-align:center; font-size:24px; letter-spacing:5px;" maxlength="5" placeholder="_____">
+            <button class="btn-main" style="background-color: var(--success);" onclick="finalizarRegistro()">Finalizar</button>
+            
+            <div class="footer-link">
+                <a href="/"><i class="fa-solid fa-arrow-left"></i> Volver al inicio</a>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
