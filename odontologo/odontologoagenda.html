@@ -2,191 +2,351 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLINIDENT | Panel Médico</title>
+    <title>CLINIDENT | Mi Agenda</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #0f172a;
-            --accent: #0052FF;
-            --bg-doctor: #eceff1;
-            --card-white: #ffffff;
+            --accent: #0ea5e9;
+            --bg: #f8fafc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
         }
 
         body {
             margin: 0;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-doctor);
+            background-color: var(--bg);
             color: var(--primary);
+            min-height: 100vh;
         }
 
         .navbar {
-            background: var(--primary);
-            padding: 15px 60px;
+            width: 100%;
+            background: white;
+            padding: 18px 40px;
+            border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: white;
+            box-sizing: border-box;
         }
 
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        .logo { font-weight: 800; font-size: 22px; }
+        .logo span { color: var(--accent); }
 
-        .header-panel {
+        .btn-back {
+            background: #f1f5f9; color: var(--primary); border: none;
+            padding: 10px 20px; border-radius: 10px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .header-agenda {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-        }
-
-        .filter-box {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
+            flex-wrap: wrap;
             gap: 15px;
+        }
+
+        .header-agenda h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        /* Filtro de fecha */
+        .filtro-bar {
+            display: flex;
             align-items: center;
-            margin-bottom: 20px;
-        }
-
-        select {
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            font-family: inherit;
-        }
-
-        .agenda-table {
-            width: 100%;
+            gap: 12px;
             background: white;
-            border-radius: 15px;
-            border-collapse: collapse;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 14px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            flex-wrap: wrap;
         }
 
-        .agenda-table th {
-            background: #f8fafc;
-            padding: 18px;
-            text-align: left;
-            border-bottom: 2px solid #edf2f7;
-            color: #64748b;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .filtro-bar label { font-weight: 700; font-size: 0.9rem; color: #64748b; }
+
+        .filtro-bar input[type="date"] {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
         }
 
-        .agenda-table td {
-            padding: 18px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            background: #e0e7ff;
-            color: var(--accent);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px;
-            color: #94a3b8;
-        }
-
-        .refresh-btn {
+        .btn-hoy {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
             cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        }
+
+        .stat-card .num {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .stat-card .lbl {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 4px;
             font-weight: 600;
         }
+
+        /* Lista de citas */
+        .cita-card {
+            background: white;
+            border-radius: 18px;
+            padding: 22px 25px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border-left: 5px solid var(--accent);
+            transition: transform 0.2s;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .cita-card:hover { transform: translateX(4px); }
+
+        .cita-hora {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            min-width: 100px;
+        }
+
+        .cita-info { flex: 1; padding: 0 20px; }
+        .cita-info .paciente { font-weight: 700; font-size: 1.1rem; }
+        .cita-info .detalle { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
+
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .badge-pendiente { background: #fef3c7; color: #d97706; }
+        .badge-atendido  { background: #d1fae5; color: #059669; }
+
+        .btn-atender {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+        }
+
+        .btn-atender:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: default;
+        }
+
+        .empty-msg {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+            font-size: 1.1rem;
+            background: white;
+            border-radius: 20px;
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: var(--success); color: white;
+            padding: 14px 22px; border-radius: 14px;
+            font-weight: 700; opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease; z-index: 999;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
-    <nav class="navbar">
-        <div style="font-weight: 800; font-size: 22px;">CLINIDENT <span>| Portal Médico</span></div>
-        <div id="reloj" style="font-weight: 600; opacity: 0.8;"></div>
-    </nav>
+<nav class="navbar">
+    <div class="logo">CLINI<span>DENT</span></div>
+    <button class="btn-back" onclick="window.location.href='panel_medico.html'">← Volver al Panel</button>
+</nav>
 
-    <div class="container">
-        <div class="header-panel">
-            <h1>Agenda de Consultas</h1>
-            <button class="refresh-btn" onclick="cargarAgenda()">🔄 Actualizar Citas</button>
-        </div>
-
-        <div class="filter-box">
-            <label><b>Filtrar por Especialista:</b></label>
-            <select id="filtro-doc" onchange="cargarAgenda()">
-                <option value="TODOS">Todos los doctores</option>
-                <option>Dr. Alberto Casas (General)</option>
-                <option>Dra. Elena Marín (Ortodoncia)</option>
-                <option>Dr. Camilo Ruiz (Cirugía)</option>
-            </select>
-        </div>
-
-        <table class="agenda-table">
-            <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Paciente</th>
-                    <th>Especialista</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-body">
-                </tbody>
-        </table>
+<div class="container">
+    <div class="header-agenda">
+        <h2>📅 Mi Agenda</h2>
+        <span style="color:#64748b; font-weight:600;">Dr. Alberto Casas</span>
     </div>
 
-    <script>
-        function cargarAgenda() {
-            const lista = JSON.parse(localStorage.getItem('clinident_db_final')) || [];
-            const filtro = document.getElementById('filtro-doc').value;
-            const tbody = document.getElementById('tabla-body');
-            
-            tbody.innerHTML = "";
+    <div class="filtro-bar">
+        <label>VER FECHA:</label>
+        <input type="date" id="filtro-fecha" onchange="renderAgenda()">
+        <button class="btn-hoy" onclick="irHoy()">📅 Hoy</button>
+    </div>
 
-            // Filtrar y ordenar por fecha y hora
-            let citasFiltradas = lista;
-            if (filtro !== "TODOS") {
-                citasFiltradas = lista.filter(c => c.doc === filtro);
-            }
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="num" id="stat-total">0</div>
+            <div class="lbl">Citas del día</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" id="stat-pendientes">0</div>
+            <div class="lbl">Pendientes</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" id="stat-atendidos">0</div>
+            <div class="lbl">Atendidos</div>
+        </div>
+    </div>
 
-            citasFiltradas.sort((a, b) => new Date(a.fecha + ' ' + a.hora) - new Date(b.fecha + ' ' + b.hora));
+    <div id="lista-agenda"></div>
+</div>
 
-            if (citasFiltradas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No hay citas programadas en el sistema.</td></tr>`;
-                return;
-            }
+<div class="toast" id="toast"></div>
 
-            citasFiltradas.forEach(c => {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td style="font-weight:800; color:var(--accent);">${c.hora}</td>
-                    <td><b>Paciente Registrado</b></td>
-                    <td>${c.doc}</td>
-                    <td>${c.fecha}</td>
-                    <td><span class="status-badge">CONFIRMADA</span></td>
-                `;
-                tbody.appendChild(fila);
-            });
+<script>
+    const DOCTOR_NOMBRE = 'Dr. Alberto Casas (General)';
+
+    function getCitas() {
+        return JSON.parse(localStorage.getItem('clinident_citas') || '[]');
+    }
+
+    function getAtendidos() {
+        return JSON.parse(localStorage.getItem('clinident_atendidos') || '[]');
+    }
+
+    function saveAtendidos(lista) {
+        localStorage.setItem('clinident_atendidos', JSON.stringify(lista));
+    }
+
+    function fechaHoy() {
+        const hoy = new Date();
+        const y = hoy.getFullYear();
+        const m = String(hoy.getMonth() + 1).padStart(2, '0');
+        const d = String(hoy.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function irHoy() {
+        document.getElementById('filtro-fecha').value = fechaHoy();
+        renderAgenda();
+    }
+
+    function formatFecha(fechaStr) {
+        if (!fechaStr) return '';
+        const [y, m, d] = fechaStr.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function renderAgenda() {
+        const fecha = document.getElementById('filtro-fecha').value;
+        const citas = getCitas();
+        const atendidos = getAtendidos();
+
+        const citasDelDia = citas
+            .filter(c => c.doctor === DOCTOR_NOMBRE && c.fecha === fecha)
+            .sort((a, b) => convertirHora(a.hora) - convertirHora(b.hora));
+
+        const pendientes = citasDelDia.filter(c => !atendidos.includes(c.id));
+        const atendidasHoy = citasDelDia.filter(c => atendidos.includes(c.id));
+
+        document.getElementById('stat-total').innerText = citasDelDia.length;
+        document.getElementById('stat-pendientes').innerText = pendientes.length;
+        document.getElementById('stat-atendidos').innerText = atendidasHoy.length;
+
+        const lista = document.getElementById('lista-agenda');
+
+        if (citasDelDia.length === 0) {
+            lista.innerHTML = `<div class="empty-msg">📭 No hay citas agendadas para el ${formatFecha(fecha) || 'esta fecha'}.</div>`;
+            return;
         }
 
-        // Reloj en tiempo real
-        setInterval(() => {
-            const ahora = new Date();
-            document.getElementById('reloj').innerText = ahora.toLocaleString();
-        }, 1000);
+        lista.innerHTML = citasDelDia.map(c => {
+            const yaAtendido = atendidos.includes(c.id);
+            return `
+            <div class="cita-card">
+                <div class="cita-hora">${c.hora}</div>
+                <div class="cita-info">
+                    <div class="paciente">👤 ${c.paciente}</div>
+                    <div class="detalle">📅 ${formatFecha(c.fecha)}</div>
+                </div>
+                <span class="badge ${yaAtendido ? 'badge-atendido' : 'badge-pendiente'}">
+                    ${yaAtendido ? '✅ Atendido' : '⏳ Pendiente'}
+                </span>
+                <button class="btn-atender" onclick="marcarAtendido('${c.id}')" ${yaAtendido ? 'disabled' : ''}>
+                    ${yaAtendido ? 'Listo' : 'Marcar atendido'}
+                </button>
+            </div>`;
+        }).join('');
+    }
 
-        // Cargar al iniciar
-        window.onload = cargarAgenda;
-    </script>
+    function marcarAtendido(id) {
+        const atendidos = getAtendidos();
+        if (!atendidos.includes(id)) {
+            atendidos.push(id);
+            saveAtendidos(atendidos);
+            mostrarToast('✅ Paciente marcado como atendido');
+            renderAgenda();
+        }
+    }
+
+    function convertirHora(horaStr) {
+        const [time, period] = horaStr.split(' ');
+        let [h, m] = time.split(':').map(Number);
+        if (period === 'PM' && h !== 12) h += 12;
+        if (period === 'AM' && h === 12) h = 0;
+        return h * 60 + m;
+    }
+
+    function mostrarToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    document.getElementById('filtro-fecha').value = fechaHoy();
+    renderAgenda();
+</script>
 </body>
 </html>
