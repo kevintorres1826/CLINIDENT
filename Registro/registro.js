@@ -1,6 +1,6 @@
 $(document).ready(function() {
 
-    // --- 1. FUNCIONES DE INTERFAZ ---
+    // --- 1. DAGITI FUNKSION TI INTERFAZ ---
 
     $(document).on('click', '.toggle-password', function() {
         const input = $(this).siblings('input');
@@ -28,67 +28,69 @@ $(document).ready(function() {
     };
 
 
-    // --- 2. LÓGICA DE REGISTRO (PASO 1) ---
+    // --- 2. LOGIKA TI PANAGREHISTRO (PASO 1) ---
 
     window.simularEnvio = function() {
         const nom   = $('#nom').val().trim();
+        const ape   = $('#ape').val().trim();
         const email = $('#email').val().trim();
+        const tel   = $('#tel').val().trim();
         const pass  = $('#pass').val();
         const conf  = $('#conf').val();
 
-        if (!nom || !email || !pass) {
-            alert("Por favor, completa los campos obligatorios.");
+        if (!nom || !ape || !email || !pass) {
+            alert("Suroten ti rumbeng, pakisuratan amin a nasken a blanko.");
             return;
         }
 
         if (pass !== conf) {
-            alert("Las contraseñas no coinciden.");
+            alert("Saan a nagpada dagiti pasword.");
             return;
         }
 
         $('#btn-envio').hide();
         $('#loader').show();
 
-        setTimeout(() => {
-            $('#step-1').hide();
+        // Paipatulod dagiti datos sadiay database babaen ti PHP
+        $.post('registro.php', {
+            nombre: nom,
+            apellido: ape,
+            email: email,
+            telefono: tel,
+            password: pass
+        }, function(respuesta) {
             $('#loader').hide();
-            $('#step-2').show();
-            $('#input-codigo').focus();
-        }, 1500);
+            if (respuesta.status === 'success') {
+                $('#step-1').hide();
+                $('#step-2').show();
+                $('#input-codigo').focus();
+            } else {
+                alert("⚠️ Biddut: " + respuesta.msg);
+                $('#btn-envio').show();
+            }
+        }, 'json').fail(function() {
+            $('#loader').hide();
+            $('#btn-envio').show();
+            alert("Saan a makakonektar iti server.");
+        });
     };
 
 
-    // --- 3. REGISTRO SIN BASE DE DATOS ---
+    // --- 3. PANAGREHISTRO SAYSAYAY ITI DATABASE (PASO 2) ---
 
     window.finalizarRegistro = function() {
         const codigoInput = $('#input-codigo').val().toUpperCase().trim();
 
         if (codigoInput === "SENA4") {
-
-            // Guardar datos en localStorage (sin base de datos)
-            const usuario = {
-                nombre:   $('#nom').val(),
-                apellido: $('#ape').val(),
-                email:    $('#email').val(),
-                telefono: $('#tel').val(),
-                password: $('#pass').val()
-            };
-
-            localStorage.setItem('usuario_registrado', JSON.stringify(usuario));
-
-            alert('¡Cuenta creada con éxito! Bienvenido/a, ' + usuario.nombre + '.');
-            
-            // LÍNEA 61: Redirigir al login tras éxito
+            alert('Nagballigi ti pannakaaramid ti kuentam sadiay CLINIDENT!');
             window.location.href = '../login/login.html';
-
         } else {
-            alert('Código incorrecto. El código de prueba es: SENA4');
+            alert('Saan a husto ti kodigo. Ti husto a kodigo ket: SENA4');
         }
     };
 
-    // --- 4. NAVEGACIÓN ---
+    // --- 4. PANAGNAYAGAR ---
     
-    // Función para el enlace "¿Ya tienes una cuenta?"
     window.irAlLogin = function() {
         window.location.href ='../login/login.html';
     };
