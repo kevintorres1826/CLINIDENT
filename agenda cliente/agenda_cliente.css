@@ -71,6 +71,222 @@ body {
 
 .menu-item i { font-size: 50px; display: block; margin-bottom: 20px; }
 
+/* ─── PASO DE PROGRESO ─── */
+.progress-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 35px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.step.active .step-num {
+    background: var(--accent);
+    color: white;
+}
+
+.step.active {
+    color: var(--primary);
+}
+
+.step.done .step-num {
+    background: var(--success);
+    color: white;
+}
+
+.step.done {
+    color: var(--success);
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 10px;
+    min-width: 30px;
+}
+
+/* ─── GRID DE TRATAMIENTOS ─── */
+.grid-tratamientos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 30px;
+}
+
+.tratamiento-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    border: 2px solid #e2e8f0;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tratamiento-card:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 82, 255, 0.12);
+}
+
+.tratamiento-card.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: 0 8px 24px rgba(0, 82, 255, 0.18);
+}
+
+.tcard-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.tcard-info { flex: 1; }
+
+.tcard-nombre {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--primary);
+    margin-bottom: 3px;
+}
+
+.tcard-desc {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.tcard-duracion {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.tcard-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.tcard-check.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ─── BANNER DE TRATAMIENTO SELECCIONADO ─── */
+.tratamiento-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, var(--accent-soft), #dbeafe);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 18px 22px;
+    margin-bottom: 30px;
+}
+
+.banner-icon {
+    font-size: 2.2rem;
+    width: 52px;
+    height: 52px;
+    background: white;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.banner-info { flex: 1; }
+
+.banner-titulo {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.banner-meta {
+    font-size: 0.82rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+/* ─── BOTÓN CONTINUAR ─── */
+.btn-continuar {
+    width: 100%;
+    padding: 16px;
+    background: #e2e8f0;
+    color: #94a3b8;
+    border: none;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.btn-continuar.ready {
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0, 82, 255, 0.3);
+}
+
+.btn-continuar.ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(0, 82, 255, 0.4);
+}
+
+/* ─── GRILLA DE HORAS ─── */
 .grid-horas {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -117,17 +333,34 @@ select, input {
     box-sizing: border-box;
 }
 
+select:disabled {
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+}
+
 .btn-confirm {
     width: 100%; padding: 18px; margin-top: 30px;
     background: var(--accent); color: white; border: none;
     border-radius: 14px; font-weight: 700; font-size: 1.1rem; cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(0, 82, 255, 0.35);
 }
 
 .btn-back {
     background: #f1f5f9; color: var(--primary); border: none;
     padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer;
-    margin-bottom: 25px;
+    margin-bottom: 25px; font-family: inherit;
+    transition: background 0.2s;
 }
+
+.btn-back:hover { background: #e2e8f0; }
 
 .report-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -136,15 +369,15 @@ select, input {
 }
 
 .actions-btns { display: flex; gap: 8px; }
-.btn-edit { color: var(--warning); background: white; border: 1px solid var(--warning); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-.btn-cancel-cita { color: var(--danger); background: white; border: 1px solid var(--danger); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-edit { color: var(--warning); background: white; border: 1px solid var(--warning); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+.btn-cancel-cita { color: var(--danger); background: white; border: 1px solid var(--danger); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
 
 .empty-msg { text-align: center; color: #94a3b8; padding: 40px; font-size: 1.1rem; }
 
 .view { display: none; }
 .active { display: block; animation: fadeIn 0.4s ease; }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 .toast {
     position: fixed; bottom: 30px; right: 30px;
@@ -156,3 +389,12 @@ select, input {
     transition: all 0.4s ease; z-index: 999;
 }
 .toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 600px) {
+    .navbar { padding: 15px 20px; }
+    .container { padding: 15px; margin: 20px auto; }
+    .glass-card { padding: 25px 20px; }
+    .form-row { grid-template-columns: 1fr; }
+    .grid-tratamientos { grid-template-columns: 1fr; }
+    .welcome-title { font-size: 2rem; }
+}
