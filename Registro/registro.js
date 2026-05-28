@@ -39,12 +39,12 @@ $(document).ready(function() {
         const conf  = $('#conf').val();
 
         if (!nom || !ape || !email || !pass) {
-            alert("Suroten ti rumbeng, pakisuratan amin a nasken a blanko.");
+            alert("❌ Por favor, completa todos los campos obligatorios.");
             return;
         }
 
         if (pass !== conf) {
-            alert("Saan a nagpada dagiti pasword.");
+            alert("❌ Las contraseñas ingresadas no coinciden.");
             return;
         }
 
@@ -71,7 +71,7 @@ $(document).ready(function() {
         }, 'json').fail(function() {
             $('#loader').hide();
             $('#btn-envio').show();
-            alert("Saan a makakonektar iti server.");
+            alert("Error al enviar los datos. Por favor, inténtalo de nuevo.");
         });
     };
 
@@ -82,10 +82,10 @@ $(document).ready(function() {
         const codigoInput = $('#input-codigo').val().toUpperCase().trim();
 
         if (codigoInput === "SENA4") {
-            alert('Nagballigi ti pannakaaramid ti kuentam sadiay CLINIDENT!');
+            alert('Tu cuenta ha sido creada exitosamente. ¡Bienvenido a Clinident!');
             window.location.href = '../login/login.html';
         } else {
-            alert('Saan a husto ti kodigo. Ti husto a kodigo ket: SENA4');
+            alert('❌ Código incorrecto (El código en esta version de prueba es: SENA4)');
         }
     };
 
