@@ -6,40 +6,28 @@ session_start();
 // Sube un nivel para encontrar el conector portátil de la raíz
 require_once '../conexion.php';
 
-$correoInput     = isset($_POST['usuario']) ? trim($_POST['usuario']) : '';
-$passInput       = isset($_POST['contrasena']) ? $_POST['contrasena'] : '';
-$rolSeleccionado = isset($_POST['rol']) ? trim($_POST['rol']) : '';
+$correoInput = isset($_POST['usuario']) ? trim($_POST['usuario']) : '';
+$passInput   = isset($_POST['contrasena']) ? $_POST['contrasena'] : '';
 
-if (empty($correoInput) || empty($passInput) || empty($rolSeleccionado)) {
-    echo json_encode(['status' => 'error', 'msg' => '⚠️ Por favor escribe tu correo, contraseña y selecciona el rol.']);
+// SE QUITÓ LA VALIDACIÓN DEL ROL REQUERIDO AQUÍ
+if (empty($correoInput) || empty($passInput)) {
+    echo json_encode(['status' => 'error', 'msg' => '⚠️ Por favor escribe tu correo y contraseña.']);
     exit;
 }
 
-// Sincronización estricta con la tabla tblrol de clinident.db
-$mapeoRoles = [
-    'admin'      => 1,
-    'odontologo' => 2,
-    'recepcion'  => 3,
-    'paciente'   => 4
-];
-
-$idRolEsperado = isset($mapeoRoles[$rolSeleccionado]) ? $mapeoRoles[$rolSeleccionado] : 4;
-
 try {
+    // 1. Buscamos al usuario únicamente por su correo electrónico
     $sql_user = "SELECT id_usuario, id_rol, nombre, apellido, contrasena, estado 
                  FROM tblusuario 
-                 WHERE correo = :correo AND id_rol = :id_rol";
+                 WHERE correo = :correo";
                  
     $stmt = $conexion->prepare($sql_user);
-    $stmt->execute([
-        ':correo' => $correoInput,
-        ':id_rol' => $idRolEsperado
-    ]);
+    $stmt->execute([':correo' => $correoInput]);
     
     $usuario = $stmt->fetch();
 
     if ($usuario) {
-        // Validación directa en texto plano idéntica a tus registros semilla
+        // 2. Validamos la contraseña en texto plano
         if ($passInput === $usuario['contrasena']) {
             
             if ($usuario['estado'] !== 'Activo') {
@@ -47,13 +35,14 @@ try {
                 exit;
             }
 
+            // Guardamos las variables de sesión
             $_SESSION['id_usuario'] = $usuario['id_usuario'];
             $_SESSION['id_rol']     = $usuario['id_rol'];
             $_SESSION['nombre']     = $usuario['nombre'];
             $_SESSION['apellido']   = $usuario['apellido'];
             $_SESSION['correo']     = $correoInput;
             
-            // Redirecciones relativas calculadas desde la perspectiva de la carpeta /login/
+            // 3. Redirección automática según el id_rol real de la base de datos (clinident.db)
             $rutas = [
                 1 => '../odontologo/panel_medico.html',  // Administrador
                 2 => '../odontologo/panel_medico.html',  // Odontólogo
@@ -72,7 +61,7 @@ try {
             echo json_encode(['status' => 'error', 'msg' => '⚠️ Correo o contraseña incorrectos.']);
         }
     } else {
-        echo json_encode(['status' => 'error', 'msg' => '⚠️ No se encontró ningún usuario con esas credenciales para el rol seleccionado.']);
+        echo json_encode(['status' => 'error', 'msg' => '⚠️ Correo o contraseña incorrectos.']);
     }
 
 } catch (PDOException $e) {

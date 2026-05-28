@@ -12,17 +12,15 @@ let metodoVerif = 'correo';
 function handleLogin() {
     const user = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value;
-    const rol = document.getElementById('login-role').value;
 
     if (!user || !pass) {
-        alert('⚠️ Pakisurat ti nagan ti user ken pasword-mo.');
+        alert('⚠️ Por favor escribe tu nombre de usuario y tu contraseña..');
         return;
     }
 
     const datos = new FormData();
     datos.append('usuario', user);
     datos.append('contrasena', pass);
-    datos.append('rol', rol);
 
     // Panagpatulod iti login.php tapno maamuan no adda iti database
     fetch('login.php', {
@@ -32,7 +30,7 @@ function handleLogin() {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            alert('✅ Maipalubos ti iseserrek: ' + data.msg);
+            alert('✅ Acceso permitido' + data.msg);
             window.location.href = data.redirect; // Aquí PHP redirige de forma portable a la carpeta correcta
         } else {
             alert(data.msg);
