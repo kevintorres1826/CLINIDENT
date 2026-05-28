@@ -1,13 +1,13 @@
 <?php
+// /login/login.php
 header('Content-Type: application/json');
 session_start();
 
-// 1. Ruta corregida para salir de la carpeta 'login/' y buscar en la raíz
+// Sube un nivel para encontrar el conector portátil de la raíz
 require_once '../conexion.php';
 
-// Obtener datos del cuerpo de la petición (JSON o POST tradicional)
-$correoInput = isset($_POST['usuario']) ? trim($_POST['usuario']) : '';
-$passInput   = isset($_POST['contrasena']) ? $_POST['contrasena'] : '';
+$correoInput     = isset($_POST['usuario']) ? trim($_POST['usuario']) : '';
+$passInput       = isset($_POST['contrasena']) ? $_POST['contrasena'] : '';
 $rolSeleccionado = isset($_POST['rol']) ? trim($_POST['rol']) : '';
 
 if (empty($correoInput) || empty($passInput) || empty($rolSeleccionado)) {
@@ -15,52 +15,50 @@ if (empty($correoInput) || empty($passInput) || empty($rolSeleccionado)) {
     exit;
 }
 
-// Mapeo de roles de la UI al ID de la Base de Datos (tblrol)
-// 1 = administrador, 2 = odontologo, 3 = recepcionista, 4 = paciente
+// Sincronización estricta con la tabla tblrol de clinident.db
 $mapeoRoles = [
-    'paciente'  => 4,
+    'admin'      => 1,
     'odontologo' => 2,
-    'recepcion' => 3,
-    'admin'     => 1
+    'recepcion'  => 3,
+    'paciente'   => 4
 ];
 
 $idRolEsperado = isset($mapeoRoles[$rolSeleccionado]) ? $mapeoRoles[$rolSeleccionado] : 4;
 
-// Buscar usuario en tblusuario con su respectivo rol
-$sql_user = "SELECT id_usuario, id_rol, nombre, apellido, contrasena, estado FROM tblusuario WHERE correo = ? AND id_rol = ?";
-$stmt = $conexion->prepare($sql_user);
-
-if ($stmt) {
-    $stmt->bind_param("si", $correoInput, $idRolEsperado);
-    $stmt->execute();
-    $result = $stmt->get_result();
+try {
+    $sql_user = "SELECT id_usuario, id_rol, nombre, apellido, contrasena, estado 
+                 FROM tblusuario 
+                 WHERE correo = :correo AND id_rol = :id_rol";
+                 
+    $stmt = $conexion->prepare($sql_user);
+    $stmt->execute([
+        ':correo' => $correoInput,
+        ':id_rol' => $idRolEsperado
+    ]);
     
-    if ($result->num_rows === 1) {
-        $usuario = $result->fetch_assoc();
-        
-        // Verificar si la cuenta está Activa
-        if ($usuario['estado'] !== 'Activo') {
-            echo json_encode(['status' => 'error', 'msg' => '⚠️ Tu cuenta está inactiva. Comunícate con soporte.']);
-            $stmt->close();
-            $conexion->close();
-            exit;
-        }
-        
-        // CORRECCIÓN AQUÍ: Cambiado password_verify por === porque tus datos están en texto plano en la BD
+    $usuario = $stmt->fetch();
+
+    if ($usuario) {
+        // Validación directa en texto plano idéntica a tus registros semilla
         if ($passInput === $usuario['contrasena']) {
-            // Guardar variables de sesión para protección de páginas internas
+            
+            if ($usuario['estado'] !== 'Activo') {
+                echo json_encode(['status' => 'error', 'msg' => '⚠️ Tu usuario clínico se encuentra inactivo.']);
+                exit;
+            }
+
             $_SESSION['id_usuario'] = $usuario['id_usuario'];
             $_SESSION['id_rol']     = $usuario['id_rol'];
             $_SESSION['nombre']     = $usuario['nombre'];
             $_SESSION['apellido']   = $usuario['apellido'];
             $_SESSION['correo']     = $correoInput;
             
-            // Definición de las rutas del software basadas en el rol
+            // Redirecciones relativas calculadas desde la perspectiva de la carpeta /login/
             $rutas = [
-                4 => '../agenda cliente/index.html',     // Paciente
+                1 => '../odontologo/panel_medico.html',  // Administrador
                 2 => '../odontologo/panel_medico.html',  // Odontólogo
                 3 => '../odontologo/panel_medico.html',  // Recepcionista
-                1 => '../odontologo/panel_medico.html'   // Administrador
+                4 => '../agenda cliente/index.html'      // Paciente
             ];
             
             $redireccion = isset($rutas[$usuario['id_rol']]) ? $rutas[$usuario['id_rol']] : '../agenda cliente/index.html';
@@ -71,16 +69,13 @@ if ($stmt) {
                 'redirect' => $redireccion
             ]);
         } else {
-            // Error genérico para no dar pistas en caso de ciberataques
             echo json_encode(['status' => 'error', 'msg' => '⚠️ Correo o contraseña incorrectos.']);
         }
     } else {
         echo json_encode(['status' => 'error', 'msg' => '⚠️ No se encontró ningún usuario con esas credenciales para el rol seleccionado.']);
     }
-    $stmt->close();
-} else {
-    echo json_encode(['status' => 'error', 'msg' => 'Error de consulta en el servidor.']);
-}
 
-$conexion->close();
+} catch (PDOException $e) {
+    echo json_encode(['status' => 'error', 'msg' => 'Error de lectura local: ' . $e->getMessage()]);
+}
 ?>

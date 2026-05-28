@@ -33,7 +33,7 @@ function handleLogin() {
     .then(data => {
         if (data.status === 'success') {
             alert('✅ Maipalubos ti iseserrek: ' + data.msg);
-            window.location.href = data.redirect;
+            window.location.href = data.redirect; // Aquí PHP redirige de forma portable a la carpeta correcta
         } else {
             alert(data.msg);
         }
@@ -63,7 +63,8 @@ function enviarCodigo(metodo) {
     datos.append('metodo', metodo);
     datos.append('valor', val);
 
-    fetch('recuperar.php', {
+    // EDITADO: Cambiado 'recuperar.php' a 'recuperacion.php' para coincidir con nuestro controlador SQLite3
+    fetch('recuperacion.php', {
         method: 'POST',
         body: datos
     })
@@ -88,7 +89,7 @@ function enviarCodigo(metodo) {
 // ── Beripikasion ti Kodigo ──
 function verificarCodigo() {
     const ingresado = document.getElementById('codigo').value.trim().toUpperCase();
-    const correcto = 'SENA4'; 
+    const correcto = 'SENA4'; // Tu validación estática local e ideal para portabilidad offline
 
     if (ingresado === correcto) {
         go('screen-nueva-pass');
@@ -120,9 +121,10 @@ function guardarNuevaPassword() {
     datos.append('accion', 'actualizar_password');
     datos.append('metodo', metodoVerif);
     datos.append('valor', contactoRecuperacion);
-    datos.append('password', p1);
+    datos.append('password', p1); // Se envía en texto plano directo a SQLite3
 
-    fetch('recuperar.php', {
+    // EDITADO: Cambiado 'recuperar.php' a 'recuperacion.php' para apuntar al backend unificado de la clínica
+    fetch('recuperacion.php', {
         method: 'POST',
         body: datos
     })
@@ -144,6 +146,7 @@ function irARegistro() {
     window.location.href = '../Registro/registro.html';
 }
 
+// Mantiene tu configuración de Service Worker (PWA portable) intacta
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
@@ -151,3 +154,4 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.log('Biddut SW:', err));
     });
 }
+

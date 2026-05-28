@@ -1,20 +1,29 @@
 <?php
-$host = "localhost";
-$user = "root";
-$password = ""; // En XAMPP por defecto va vacío en Linux, déjalo así
-$database = "clinident";
+// conexion.php
 
-// Creamos la conexión en formato MySQLi
-$conexion = new mysqli($host, $user, $password, $database);
+// Autodetecta la ubicación del .db al lado de este archivo (Ideal para portables)
+$ruta_db = __DIR__ . '/clinident.db';
 
-// Forzamos UTF-8 para evitar problemas con eñes o acentos
-$conexion->set_charset("utf8mb4");
+try {
+    // Conexión nativa a SQLite mediante el driver PDO
+    $conexion = new PDO("sqlite:" . $ruta_db);
+    
+    // Forzar que SQLite reporte cualquier error de sintaxis inmediatamente
+    $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Retornar los datos limpios en arreglos asociativos
+    $conexion->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    
+    // Activar soporte interno de llaves foráneas para mantener la integridad de las tablas
+    $conexion->exec("PRAGMA foreign_keys = ON;");
 
-// Si la conexión falla, frena el código y muestra el error exacto
-if ($conexion->connect_error) {
-    die(json_encode([
+} catch (PDOException $e) {
+    // Respuesta en JSON por si el front hace una petición asíncrona durante el fallo
+    header('Content-Type: application/json');
+    echo json_encode([
         'status' => 'error', 
-        'msg' => '⚠️ Error de conexión a la base de datos: ' . $conexion->connect_error
-    ]));
+        'msg' => 'Error de portabilidad: No se encontró o no se pudo abrir clinident.db. Asegúrate de que esté junto al ejecutable.'
+    ]);
+    exit;
 }
 ?>
