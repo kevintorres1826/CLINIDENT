@@ -22,7 +22,14 @@ function alternarFormularios() {
         text.innerText = "Regístrate hoy mismo para agendar tus citas en línea de forma ágil y segura.";
         label.innerText = "¿Ya tienes una cuenta?";
         button.innerText = "Iniciar Sesión";
-        go('step-1'); // Salta directamente a la pantalla de tu registro
+        
+        // CORRECCIÓN CRÍTICA: Nos aseguramos de limpiar los "hide" y "show" previos de jQuery
+        $('#step-2').hide();
+        $('#step-1').show(); 
+        $('#btn-envio').show();
+        $('#loader').hide();
+        
+        go('step-1'); // Salta directamente a la pantalla de tu registro de forma activa
     } else {
         modoActual = "login";
         title.innerText = "¡Bienvenido de nuevo!";
@@ -187,7 +194,7 @@ $(document).ready(function() {
             input.attr('type', 'text');
             $(this).removeClass('fa-eye').addClass('fa-eye-slash');
         } else {
-            input.attr('type', 'text').attr('type', 'password'); // Reset nativo
+            input.attr('type', 'password');
             $(this).removeClass('fa-eye-slash').addClass('fa-eye');
         }
     });
@@ -225,8 +232,10 @@ $(document).ready(function() {
         }, function(respuesta) {
             $('#loader').hide();
             if (respuesta.status === 'success') {
+                // CORRECCIÓN: Ocultamos el paso 1 y movemos el contenedor activo al paso 2
                 $('#step-1').hide();
                 $('#step-2').show();
+                go('step-2'); 
                 $('#input-codigo').focus();
             } else {
                 alert("⚠️ Error: " + respuesta.msg);
@@ -241,12 +250,30 @@ $(document).ready(function() {
 
     window.finalizarRegistro = function() {
         const codigoInput = $('#input-codigo').val().toUpperCase().trim();
+        
         if (codigoInput === "SENA4") {
-            alert('Tu cuenta ha sido creada exitosamente. ¡Bienvenido a Clinident!');
-            // En lugar de redireccionar de archivo, cambia el switch al modo login nativo
-            alternarFormularios();
+            alert('🎉 ¡Tu cuenta ha sido creada exitosamente! Bienvenido a Clinident.');
+            
+            // 1. Limpiamos los campos del registro por seguridad
+            $('#nom').val('');
+            $('#ape').val('');
+            $('#email').val('');
+            $('#tel').val('');
+            $('#pass').val('');
+            $('#input-codigo').val('');
+            $('#acepto-datos').prop('checked', false);
+            
+            // 2. Reseteamos por completo las propiedades display nativas de jQuery
+            $('#step-2').hide();
+            $('#step-1').show();
+            $('#btn-envio').prop('disabled', true).show(); 
+            
+            // 3. Volvemos al Login de forma instantánea usando tu motor local
+            alternarFormularios(); 
+            
         } else {
-            alert('❌ Código incorrecto (El código en esta version de prueba es: SENA4)');
+            alert('❌ Código incorrecto (El código en esta versión de prueba es: SENA4)');
         }
     };
+
 });
