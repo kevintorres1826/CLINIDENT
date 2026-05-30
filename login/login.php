@@ -52,10 +52,12 @@ try {
             
             $redireccion = isset($rutas[$usuario['id_rol']]) ? $rutas[$usuario['id_rol']] : '../agenda cliente/index.html';
             
+            // 🆕 CORRECCIÓN: Ahora incluimos 'nombre' en el JSON enviado al navegador
             echo json_encode([
                 'status' => 'success',
                 'msg' => '¡Ingreso correcto!',
-                'redirect' => $redireccion
+                'redirect' => $redireccion,
+                'nombre' => $usuario['nombre'] // <-- ¡ESTA LÍNEA ES LA MAGIA!
             ]);
         } else {
             echo json_encode(['status' => 'error', 'msg' => '⚠️ Correo o contraseña incorrectos.']);

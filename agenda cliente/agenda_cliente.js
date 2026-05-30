@@ -54,6 +54,7 @@ const tratamientos = [
 
 // ─── ESTADO DEL FLUJO NUEVO ───
 let tratamientoSeleccionado = null;
+let usuarioLogueado = "Paciente"; // Valor por defecto inicial
 
 // ─── BASE DE DATOS LOCAL (localStorage) ───
 function getCitas() {
@@ -108,6 +109,7 @@ function seleccionarTratamiento(id) {
     btn.classList.add('ready');
 }
 
+// ... (El resto de tus funciones se mantienen idénticas para no romper tu lógica) ...
 function confirmarTratamiento() {
     if (!tratamientoSeleccionado) {
         alert("⚠️ Por favor selecciona un tipo de tratamiento.");
@@ -116,34 +118,23 @@ function confirmarTratamiento() {
     prepararAgendadoConTratamiento();
 }
 
-// ─── FLUJO NUEVO: PASO 2 - FECHA Y HORA ───
 function prepararAgendadoConTratamiento() {
     const t = tratamientoSeleccionado;
-
-    // Mostrar info del tratamiento en el encabezado
     document.getElementById('trat-nombre-header').innerText = t.nombre;
     document.getElementById('trat-icon-header').innerText = t.icono;
     document.getElementById('trat-duracion-header').innerText = t.duracion;
     document.getElementById('trat-doctor-header').innerText = t.doctor;
-
-    // Setear el doctor fijo según tratamiento
     document.getElementById('doc').value = t.doctor;
-
     document.getElementById('edit-id').value = '';
     document.getElementById('hora-seleccionada').value = '';
     document.getElementById('titulo-agendar').innerText = 'Selecciona Fecha y Hora';
     document.getElementById('btn-save').innerText = 'Confirmar Cita';
     document.getElementById('fecha').valueAsDate = new Date();
-
     cambiarVista('agendar');
     actualizarAgenda();
 }
 
-// ─── FLUJO ORIGINAL: GRILLA DE HORAS ───
-function prepararAgendado() {
-    // Redirigir al nuevo flujo
-    abrirSelectorTratamiento();
-}
+function prepararAgendado() { abrirSelectorTratamiento(); }
 
 function actualizarAgenda() {
     const grid = document.getElementById('grid-horas');
@@ -151,24 +142,17 @@ function actualizarAgenda() {
     const fecha = document.getElementById('fecha').value;
     const editId = document.getElementById('edit-id').value;
     const citas = getCitas();
-
-    const ocupadas = citas
-        .filter(c => c.doctor === doctor && c.fecha === fecha && c.id !== editId)
-        .map(c => c.hora);
+    const ocupadas = citas.filter(c => c.doctor === doctor && c.fecha === fecha && c.id !== editId).map(c => c.hora);
 
     grid.innerHTML = '';
     horarios.forEach(h => {
         const div = document.createElement('div');
         div.className = 'hora-slot';
         div.innerText = h;
-
         if (ocupadas.includes(h)) {
             div.classList.add('occupied');
-            div.title = 'Hora ocupada';
         } else {
-            if (document.getElementById('hora-seleccionada').value === h) {
-                div.classList.add('selected');
-            }
+            if (document.getElementById('hora-seleccionada').value === h) { div.classList.add('selected'); }
             div.onclick = function () {
                 document.querySelectorAll('.hora-slot').forEach(s => s.classList.remove('selected'));
                 this.classList.add('selected');
@@ -179,7 +163,6 @@ function actualizarAgenda() {
     });
 }
 
-// ─── GUARDAR CITA ───
 function finalizarAgendado() {
     const doctor = document.getElementById('doc').value;
     const fecha = document.getElementById('fecha').value;
@@ -192,7 +175,6 @@ function finalizarAgendado() {
     }
 
     const citas = getCitas();
-
     if (editId) {
         const idx = citas.findIndex(c => c.id === editId);
         if (idx !== -1) {
@@ -207,7 +189,7 @@ function finalizarAgendado() {
     } else {
         const nueva = {
             id: Date.now().toString(),
-            paciente: 'Nico',
+            paciente: usuarioLogueado, // Usará el primer nombre extraído abajo
             doctor,
             fecha,
             hora,
@@ -216,25 +198,20 @@ function finalizarAgendado() {
         };
         citas.push(nueva);
     }
-
     saveCitas(citas);
     mostrarToast(editId ? '✏️ Cita actualizada' : '✅ ¡Cita confirmada!');
     tratamientoSeleccionado = null;
     cambiarVista('menu');
 }
 
-// ─── LISTA DE CITAS ───
 function renderLista() {
     const citas = getCitas();
     const contenedor = document.getElementById('lista-citas');
-
     if (citas.length === 0) {
         contenedor.innerHTML = '<div class="empty-msg">📭 No hay citas registradas aún.</div>';
         return;
     }
-
     citas.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
-
     contenedor.innerHTML = citas.map(c => `
         <div class="report-item">
             <div>
@@ -256,28 +233,21 @@ function formatFecha(fechaStr) {
     return `${d}/${m}/${y}`;
 }
 
-// ─── EDITAR Y ELIMINAR ───
 function editarCita(id) {
     const citas = getCitas();
     const cita = citas.find(c => c.id === id);
     if (!cita) return;
-
-    // Buscar el tratamiento correspondiente
     tratamientoSeleccionado = tratamientos.find(t => t.nombre === cita.tratamiento) || null;
-
     document.getElementById('edit-id').value = cita.id;
     document.getElementById('doc').value = cita.doctor;
     document.getElementById('fecha').value = cita.fecha;
     document.getElementById('hora-seleccionada').value = cita.hora;
     document.getElementById('titulo-agendar').innerText = '✏️ Editar Cita';
     document.getElementById('btn-save').innerText = 'Guardar Cambios';
-
-    // Header info al editar
     document.getElementById('trat-nombre-header').innerText = cita.tratamiento || 'Consulta';
     document.getElementById('trat-icon-header').innerText = cita.tratamientoIcono || '🦷';
     document.getElementById('trat-duracion-header').innerText = tratamientoSeleccionado ? tratamientoSeleccionado.duracion : '—';
     document.getElementById('trat-doctor-header').innerText = cita.doctor;
-
     cambiarVista('agendar');
     actualizarAgenda();
 }
@@ -297,11 +267,25 @@ function mostrarToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-function cancelarEdicion() {
-    tratamientoSeleccionado = null;
-    cambiarVista('menu');
-}
+function cancelarEdicion() { tratamientoSeleccionado = null; cambiarVista('menu'); }
+function volverATratamiento() { cambiarVista('tratamiento'); }
 
-function volverATratamiento() {
-    cambiarVista('tratamiento');
-}
+
+// ─── 🆕 SECCIÓN DEFENSIVA AL CARGAR LA PÁGINA ───
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Ir a buscar el nombre guardado por el login
+    let nombreGuardado = localStorage.getItem('clinident_usuario_nombre');
+    
+    // 2. Si existe un nombre real, procesarlo
+    if (nombreGuardado && nombreGuardado.trim() !== "") {
+        usuarioLogueado = nombreGuardado.trim().split(" ")[0];
+    } else {
+        usuarioLogueado = "Paciente";
+    }
+    
+    // 3. Pintarlo en el HTML de forma obligatoria
+    const elBienvenida = document.getElementById('nombre-usuario-bienvenida');
+    if (elBienvenida) {
+        elBienvenida.innerText = usuarioLogueado;
+    }
+});

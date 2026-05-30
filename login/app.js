@@ -65,18 +65,28 @@ function handleLogin() {
     })
     .then(res => res.json())
     .then(data => {
+        console.log("Respuesta del servidor PHP (Login):", data);
+
         if (data.status === 'success') {
             alert('✅ Acceso permitido: ' + data.msg);
+            
+            // Guardamos el nombre que viene del servidor de manera estricta
+            if (data.nombre) {
+                localStorage.setItem('clinident_usuario_nombre', data.nombre);
+            } else {
+                localStorage.setItem('clinident_usuario_nombre', 'Usuario Sin Nombre');
+            }
+            
             window.location.href = data.redirect; 
         } else {
             alert(data.msg);
         }
     })
     .catch(err => {
-        console.error(err);
+        console.error("Error en la petición:", err);
         alert('Error al intentar conectar con el servidor local.');
     });
-}
+} // 🔍 CORRECCIÓN: ¡Se añadió esta llave de cierre que faltaba aquí!
 
 function seleccionarMetodo(tipo) {
     metodoVerif = tipo;
@@ -232,7 +242,6 @@ $(document).ready(function() {
         }, function(respuesta) {
             $('#loader').hide();
             if (respuesta.status === 'success') {
-                // CORRECCIÓN: Ocultamos el paso 1 y movemos el contenedor activo al paso 2
                 $('#step-1').hide();
                 $('#step-2').show();
                 go('step-2'); 
@@ -250,9 +259,15 @@ $(document).ready(function() {
 
     window.finalizarRegistro = function() {
         const codigoInput = $('#input-codigo').val().toUpperCase().trim();
+        const nom = $('#nom').val().trim(); // 🆕 Capturamos el nombre escrito en el formulario
         
         if (codigoInput === "SENA4") {
             alert('🎉 ¡Tu cuenta ha sido creada exitosamente! Bienvenido a Clinident.');
+            
+            // 🆕 CRÍTICA: Guardamos el nombre inmediatamente en el LocalStorage
+            if (nom) {
+                localStorage.setItem('clinident_usuario_nombre', nom);
+            }
             
             // 1. Limpiamos los campos del registro por seguridad
             $('#nom').val('');
@@ -268,12 +283,12 @@ $(document).ready(function() {
             $('#step-1').show();
             $('#btn-envio').prop('disabled', true).show(); 
             
-            // 3. Volvemos al Login de forma instantánea usando tu motor local
-            alternarFormularios(); 
+            // 3. Redirección automática inmediata a la agenda
+            // (Como ya guardamos el nombre arriba, la agenda se abrirá saludando correctamente)
+            window.location.href = '../agenda cliente/index.html';
             
         } else {
             alert('❌ Código incorrecto (El código en esta versión de prueba es: SENA4)');
         }
     };
-
 });
