@@ -41,11 +41,10 @@ function alternarFormularios() {
 }
 
 // ==========================================
-// ── 2. MÓDULO LOGIC LOGIN & RECUPERACIÓN (login.js original) ──
+// ── 2. MÓDULO LOGIC LOGIN & RECUPERACIÓN (Adaptado a Python) ──
 // ==========================================
 let contactoRecuperacion = '';
 let metodoVerif = 'correo';
-
 function handleLogin() {
     const user = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value;
@@ -55,38 +54,41 @@ function handleLogin() {
         return;
     }
 
+    // 🚀 CONTROL ANTIFALLOS: Si por alguna razón config.js no cargó, 
+    // le asignamos el puerto por defecto para que no se vuelva 'undefined'
+    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
+
     const datos = new FormData();
     datos.append('usuario', user);
     datos.append('contrasena', pass);
 
-    fetch('login.php', {
+    // Cambiamos `${API_BASE_URL}` por `${urlBase}` que está blindada
+    fetch(`${urlBase}/login/login`, {
         method: 'POST',
-        body: datos
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(Object.fromEntries(datos)) 
     })
-    .then(res => res.json())
-    .then(data => {
-        console.log("Respuesta del servidor PHP (Login):", data);
+    // ... resto de tu código fetch permanece igual
 
+    .then(response => response.json())
+    .then(data => {
         if (data.status === 'success') {
-            alert('✅ Acceso permitido: ' + data.msg);
-            
-            // Guardamos el nombre que viene del servidor de manera estricta
-            if (data.nombre) {
-                localStorage.setItem('clinident_usuario_nombre', data.nombre);
-            } else {
-                localStorage.setItem('clinident_usuario_nombre', 'Usuario Sin Nombre');
-            }
-            
-            window.location.href = data.redirect; 
+            alert("¡Inicio de sesión correcto!");
+            window.location.href = "../agenda_cliente/index.html"; 
         } else {
-            alert(data.msg);
+            // 🚀 CONTROL ANTIFALLOS: Si data.message o data.msg no existen, muestra un texto genérico
+            const mensajeError = data.message || data.msg || "Credenciales incorrectas o error interno.";
+            alert("Error: " + mensajeError);
         }
     })
-    .catch(err => {
-        console.error("Error en la petición:", err);
-        alert('Error al intentar conectar con el servidor local.');
+    .catch(error => {
+        console.error("Error en la petición:", error);
+        alert("Error al intentar conectar con el servidor local.");
     });
-} // 🔍 CORRECCIÓN: ¡Se añadió esta llave de cierre que faltaba aquí!
+} 
 
 function seleccionarMetodo(tipo) {
     metodoVerif = tipo;
@@ -125,9 +127,13 @@ function enviarCodigoVerificacion() {
     datos.append('metodo', metodoVerif);
     datos.append('valor', contactoRecuperacion);
 
-    fetch('recuperacion.php', {
+    fetch(`${API_BASE_URL}/login/recuperacion`, { // <-- Cambiado de recuperacion.php al .exe
         method: 'POST',
-        body: datos
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(Object.fromEntries(datos))
     })
     .then(res => res.json())
     .then(data => {
@@ -137,10 +143,13 @@ function enviarCodigoVerificacion() {
             document.getElementById('codigo').value = "";
             go('screen-verificacion');
         } else {
-            alert("❌ " + data.msg);
+            alert("❌ " + (data.message || data.msg));
         }
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+        console.error(err);
+        alert("Error al conectar con el servicio de recuperación.");
+    });
 }
 
 function verificarCodigo() {
@@ -177,9 +186,13 @@ function guardarNuevaPassword() {
     datos.append('valor', contactoRecuperacion);
     datos.append('password', p1);
 
-    fetch('recuperacion.php', {
+    fetch(`${API_BASE_URL}/login/recuperacion`, { // <-- Cambiado de recuperacion.php al .exe
         method: 'POST',
-        body: datos
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(Object.fromEntries(datos))
     })
     .then(res => res.json())
     .then(data => {
@@ -187,14 +200,14 @@ function guardarNuevaPassword() {
             alert("✅ ¡Tu contraseña ha sido actualizada con éxito en el sistema!");
             go('screen-login');
         } else {
-            alert("❌ Hubo un error: " + data.msg);
+            alert("❌ Hubo un error: " + (data.message || data.msg));
         }
     })
     .catch(err => console.error(err));
 }
 
 // ==========================================
-// ── 3. MÓDULO LOGIC REGISTRO (registro.js original usando jQuery) ──
+// ── 3. MÓDULO LOGIC REGISTRO (Adaptado con Fetch para el .exe) ──
 // ==========================================
 $(document).ready(function() {
     // Visibilidad de contraseñas
@@ -232,14 +245,26 @@ $(document).ready(function() {
         $('#btn-envio').hide();
         $('#loader').show();
 
-        // Envío por POST exacto a tu registro.php local
-        $.post('registro.php', {
+        // Convertimos los datos del formulario en un objeto JSON nativo para Python
+        const datosRegistro = {
             nombre: nom,
             apellido: ape,
             email: email,
             telefono: tel,
             password: pass
-        }, function(respuesta) {
+        };
+
+        // Migrado a fetch para usar de forma segura API_BASE_URL y credentials
+        fetch(`${API_BASE_URL}/Registro/registro`, { 
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosRegistro)
+        })
+        .then(res => res.json())
+        .then(respuesta => {
             $('#loader').hide();
             if (respuesta.status === 'success') {
                 $('#step-1').hide();
@@ -247,10 +272,11 @@ $(document).ready(function() {
                 go('step-2'); 
                 $('#input-codigo').focus();
             } else {
-                alert("⚠️ Error: " + respuesta.msg);
+                alert("⚠️ Error: " + (respuesta.message || respuesta.msg));
                 $('#btn-envio').show();
             }
-        }, 'json').fail(function() {
+        })
+        .catch(function() {
             $('#loader').hide();
             $('#btn-envio').show();
             alert("Error al enviar los datos. Por favor, inténtalo de nuevo.");
@@ -259,12 +285,11 @@ $(document).ready(function() {
 
     window.finalizarRegistro = function() {
         const codigoInput = $('#input-codigo').val().toUpperCase().trim();
-        const nom = $('#nom').val().trim(); // 🆕 Capturamos el nombre escrito en el formulario
+        const nom = $('#nom').val().trim(); 
         
         if (codigoInput === "SENA4") {
             alert('🎉 ¡Tu cuenta ha sido creada exitosamente! Bienvenido a Clinident.');
             
-            // 🆕 CRÍTICA: Guardamos el nombre inmediatamente en el LocalStorage
             if (nom) {
                 localStorage.setItem('clinident_usuario_nombre', nom);
             }
@@ -283,9 +308,8 @@ $(document).ready(function() {
             $('#step-1').show();
             $('#btn-envio').prop('disabled', true).show(); 
             
-            // 3. Redirección automática inmediata a la agenda
-            // (Como ya guardamos el nombre arriba, la agenda se abrirá saludando correctamente)
-            window.location.href = '../agenda cliente/index.html';
+            // 3. Redirección automática a la carpeta corregida sin espacios
+            window.location.href = '../agenda_cliente/index.html';
             
         } else {
             alert('❌ Código incorrecto (El código en esta versión de prueba es: SENA4)');
