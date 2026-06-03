@@ -26,7 +26,6 @@ let tratamientoSeleccionado = null;
 // ─── INICIALIZACIÓN Y VALIDACIÓN DE SESIÓN REAL
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-    // Sincronizar dinámicamente con el Login real de PHP de XAMPP
     fetch(`${API_URL}?action=get_sesion_usuario`)
         .then(res => res.json())
         .then(user => {
@@ -37,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .catch(err => console.error("Error al obtener sesión:", err));
     
-    // Bloquear fechas pasadas en el calendario
     const inputFecha = document.getElementById("fecha");
     if(inputFecha) {
         const hoy = new Date().toISOString().split('T')[0];
@@ -45,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     cargarOdontologos();
-
     cambiarVista('menu');
 });
 
@@ -67,11 +64,11 @@ function cargarOdontologos() {
         .then(res => res.json())
         .then(response => {
             if (response.status === "success") {
-                const selectDoc = document.getElementById("doc"); // Asegúrate que tu <select> tenga id="doc"
+                const selectDoc = document.getElementById("doc");
                 selectDoc.innerHTML = '<option value="">Seleccione un especialista</option>';
                 response.data.forEach(doc => {
                     let option = document.createElement("option");
-                    option.value = doc.id; // Aquí enviamos el ID real de la BD
+                    option.value = doc.id;
                     option.text = doc.nombre;
                     selectDoc.appendChild(option);
                 });
@@ -133,8 +130,14 @@ function confirmarTratamiento() {
     document.getElementById("trat-doctor-header").innerText = tratamientoSeleccionado.doctor;
 
     const selectDoc = document.getElementById("doc");
+    selectDoc.selectedIndex = 0; // Por defecto
+
+    // Búsqueda flexible e inteligente del especialista en el select
     for (let i = 0; i < selectDoc.options.length; i++) {
-        if (selectDoc.options[i].text.includes(tratamientoSeleccionado.doctor)) {
+        let textoOpcion = selectDoc.options[i].text.toLowerCase().replace("dr. ", "").replace("dra. ", "").trim();
+        let textoTratamiento = tratamientoSeleccionado.doctor.toLowerCase();
+        
+        if (textoOpcion !== "" && textoTratamiento.includes(textoOpcion)) {
             selectDoc.selectedIndex = i;
             break;
         }
@@ -159,10 +162,10 @@ function volverATratamiento() {
 // =========================================================================
 function actualizarAgenda() {
     const fecha = document.getElementById("fecha").value;
-    const doctorId = document.getElementById("doc").value; // Obtenemos el ID del select
+    const doctorId = document.getElementById("doc").value;
     const editId = document.getElementById("edit-id").value;
 
-    if (!fecha || !doctorId) return; // Si no hay doctor seleccionado, no buscamos
+    if (!fecha || !doctorId) return;
 
     let url = `${API_URL}?action=get_citas_ocupadas&fecha=${fecha}&doctor=${encodeURIComponent(doctorId)}`;
     if (editId) {
@@ -218,23 +221,21 @@ function seleccionarHoraSlot(elemento, hora) {
 function finalizarAgendado() {
     const editId = document.getElementById("edit-id").value;
     const fecha = document.getElementById("fecha").value;
-    const doctorId = document.getElementById("doc").value; // Cambiamos el nombre de la variable
+    const doctorId = document.getElementById("doc").value;
     const hora = document.getElementById("hora-seleccionada").value;
 
-    if (!fecha || !hora || !doctorId) { // Validamos también el doctorId
+    if (!fecha || !hora || !doctorId) {
         mostrarToast("⚠️ Por favor selecciona fecha, horario y especialista.");
         return;
     }
 
     const payload = {
         edit_id: editId ? editId : null,
-        doctor_id: doctorId, // Enviamos el ID numérico
+        doctor_id: doctorId,
         fecha: fecha,
         hora: hora,
         tratamiento: tratamientoSeleccionado ? tratamientoSeleccionado.nombre : "Limpieza Dental"
     };
-    // ... resto del fetch igual ...
-
 
     fetch(API_URL, {
         method: "POST",
@@ -326,7 +327,6 @@ function iniciarEdicion(idCita) {
         })
         .catch(err => console.error(err));
 }
-
 
 function eliminarCita(idCita) {
     if (!confirm("¿Seguro que deseas cancelar esta cita? El horario se liberará inmediatamente.")) return;

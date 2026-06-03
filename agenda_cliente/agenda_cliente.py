@@ -4,17 +4,17 @@ import sqlite3
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, session
 
-# Solución de portabilidad absoluta: Encuentra la ruta raíz del .exe o script principal
+print("=== VERSION NUEVA agenda_cliente.py ===")
+print("=== AGENDA CLIENTE CARGADO ===")
+
+# Solución de portabilidad absoluta
 if getattr(sys, 'frozen', False):
     ruta_base = os.path.dirname(sys.executable)
 else:
-    # Sube un nivel si este archivo está metido dentro de una subcarpeta (como 'agenda_cliente/')
     ruta_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Ruta unificada a la base de datos real
 RUTA_BD = os.path.join(ruta_base, "clinident.db")
 
-# Creamos el Blueprint para el módulo de agenda de clientes
 agenda_blueprint = Blueprint('agenda_blueprint', __name__)
 
 def obtener_odontologos_disponibles():
@@ -22,7 +22,6 @@ def obtener_odontologos_disponibles():
     conexion = sqlite3.connect(RUTA_BD)
     conexion.row_factory = sqlite3.Row
     cursor = conexion.cursor()
-    # Filtramos por rol 2 (odontólogo) según tu base de datos
     cursor.execute("SELECT id_usuario, nombre, apellido FROM tblusuario WHERE id_rol = 2 AND estado = 'Activo'")
     odontologos = cursor.fetchall()
     conexion.close()
@@ -33,7 +32,18 @@ def obtener_sala_segun_tratamiento(tratamiento_name):
     if tratamiento_name == "Cirugía Oral": return 4
     if tratamiento_name == "Limpieza Dental": return 5
     if tratamiento_name == "Ortodoncia": return 3
-    return 2 # Consultorio base por defecto
+    return 2 
+
+def obtener_nombre_doctor_js(id_odontologo):
+    """Devuelve la cadena formateada del nombre completo del especialista"""
+    conexion = sqlite3.connect(RUTA_BD)
+    cursor = conexion.cursor()
+    cursor.execute("SELECT nombre, apellido FROM tblusuario WHERE id_usuario = ?", [id_odontologo])
+    doc = cursor.fetchone()
+    conexion.close()
+    if doc:
+        return f"Dr. {doc[0]} {doc[1]}"
+    return "Especialista"
 
 # =========================================================================
 # ─── ACCIONES GET (CONSULTAS DE DATOS)
@@ -41,13 +51,11 @@ def obtener_sala_segun_tratamiento(tratamiento_name):
 
 @agenda_blueprint.route('/agenda_cliente', methods=['GET'])
 def acciones_get():
-    # Detectar usuario logueado desde la sesión global de Flask (ID 3 por defecto si está vacío)
     id_usuario_sesion = session.get('id_usuario', 3)
     nombre_usuario_sesion = session.get('nombre_usuario', session.get('nombre', 'Paciente'))
 
     action = request.args.get('action', '')
 
-    # NUEVA ACCIÓN: Devuelve los datos del usuario en sesión actual al JavaScript
     if action == 'get_sesion_usuario':
         return jsonify({
             "status": "success",
@@ -55,35 +63,33 @@ def acciones_get():
             "nombre": nombre_usuario_sesion
         })
 
-    # A. OBTENER HORARIOS OCUPADOS
     elif action == 'get_odontologos':
         return jsonify({"status": "success", "data": obtener_odontologos_disponibles()})
 
-
     elif action == 'get_citas_ocupadas':
         fecha = request.args.get('fecha', '')
-        doctor_name = request.args.get('doctor', '')
+        doctor_id = request.args.get('doctor', '')
         edit_id = request.args.get('edit_id', '')
 
-        if not fecha:
+        if not fecha or not doctor_id:
             return jsonify({"status": "success", "data": []})
 
         conexion = None
         try:
-            id_odontologo, id_sala = obtener_id_odontologo_y_sala(doctor_name, '')
+            id_odontologo = int(doctor_id)
             conexion = sqlite3.connect(RUTA_BD)
-            conexion.row_factory = sqlite3.Row  # 🚀 Permitir acceso por nombre de columna
-            
+            conexion.row_factory = sqlite3.Row
             cursor = conexion.cursor()
 
-            sql = """SELECT c.hora_inicio 
-                     FROM tblcita c 
-                     LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
-                     WHERE c.fecha = ? 
-                       AND (c.id_odontologo = ? OR c.id_sala = ?)
-                       AND (a.id_estado IS NULL OR a.id_estado != 2)"""
-            
-            params = [fecha, id_odontologo, id_sala]
+            sql = """
+            SELECT c.hora_inicio
+            FROM tblcita c
+            LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
+            WHERE c.fecha = ?
+              AND c.id_odontologo = ?
+              AND (a.id_estado IS NULL OR a.id_estado != 2)
+            """
+            params = [fecha, id_odontologo]
             
             if edit_id and edit_id not in ["null", "undefined", ""]:
                 sql += " AND c.id_cita != ?"
@@ -92,7 +98,6 @@ def acciones_get():
             cursor.execute(sql, params)
             horas_db = cursor.fetchall()
 
-            # Formatear las horas devueltas de la DB ("08:00:00") al formato del JS ("08:00 AM")
             ocupadas = []
             for row in horas_db:
                 hora_obj = datetime.strptime(row['hora_inicio'], "%H:%M:%S")
@@ -105,13 +110,11 @@ def acciones_get():
             if conexion:
                 conexion.close()
 
-    # B. HISTORIAL: LISTAR CITAS DEL PACIENTE LOGUEADO
     elif action == 'get_citas_usuario':
         conexion = None
         try:
             conexion = sqlite3.connect(RUTA_BD)
-            conexion.row_factory = sqlite3.Row  # 🚀 Permitir acceso por nombre de columna
-            
+            conexion.row_factory = sqlite3.Row
             cursor = conexion.cursor()
             sql = """SELECT c.id_cita as id, c.fecha, c.hora_inicio as hora, c.id_odontologo, c.id_sala
                      FROM tblcita c
@@ -160,14 +163,12 @@ def acciones_get():
             if conexion:
                 conexion.close()
 
-    # C. OBTENER DATOS DE UNA SOLA CITA
     elif action == 'get_una_cita':
         id_cita = request.args.get('id_cita', '')
         conexion = None
         try:
             conexion = sqlite3.connect(RUTA_BD)
-            conexion.row_factory = sqlite3.Row  # 🚀 Permitir acceso por nombre de columna
-            
+            conexion.row_factory = sqlite3.Row
             cursor = conexion.cursor()
             cursor.execute("SELECT * FROM tblcita WHERE id_cita = ?", [id_cita])
             cita = cursor.fetchone()
@@ -212,7 +213,6 @@ def acciones_post():
     id_usuario_sesion = session.get('id_usuario', 3)
     action = request.args.get('action', '')
     
-    # Soporte para capturar el cuerpo json enviado mediante fetch()
     input_data = request.get_json() or {}
 
     if not input_data and not request.form:
@@ -224,10 +224,9 @@ def acciones_post():
     conexion = None
     try:
         conexion = sqlite3.connect(RUTA_BD)
-        conexion.row_factory = sqlite3.Row  # 🚀 Permitir acceso por nombre de columna
+        conexion.row_factory = sqlite3.Row
         cursor = conexion.cursor()
 
-        # D. CANCELAR CITA
         if action == 'cancelar_cita':
             id_cita = input_data.get('id_cita')
             if not id_cita:
@@ -241,13 +240,11 @@ def acciones_post():
             else:
                 cursor.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, 2)", [id_cita])
             
-            conexion.commit() # Guarda de forma segura
-            return jsonify({"status": "success", "message": "Cita cancelada con éxito."}) # Corregido sintaxis de jsonify
+            conexion.commit()
+            return jsonify({"status": "success", "message": "Cita cancelada con éxito."})
 
-        # E. GUARDAR O ACTUALIZAR CITA
         else:
             edit_id = input_data.get('edit_id')
-            doctor_name = input_data.get('doctor', '')
             fecha = input_data.get('fecha', '')
             hora_raw = input_data.get('hora', '')
             tratamiento_js = input_data.get('tratamiento', 'Limpieza Dental')
@@ -255,11 +252,9 @@ def acciones_post():
             if not fecha or not hora_raw:
                 return jsonify({"status": "error", "message": "Fecha y hora requeridas."})
 
-            # Convertir hora del formato JS ("08:00 AM") a formato militar de base de datos ("08:00:00")
             hora_obj = datetime.strptime(hora_raw, "%I:%M %p")
             hora_inicio = hora_obj.strftime("%H:%M:%S")
             
-            # Calcular duraciones exactas de manera dinámica
             minutos = 45
             if tratamiento_js == "Ortodoncia": minutos = 60
             if tratamiento_js in ["Blanqueamiento", "Endodoncia"]: minutos = 90
@@ -269,10 +264,13 @@ def acciones_post():
             hora_fin_obj = hora_obj + timedelta(minutes=minutos)
             hora_fin = hora_fin_obj.strftime("%H:%M:%S")
 
-            id_odontologo = int(input_data.get('doctor_id')) 
+            try:
+                id_odontologo = int(input_data.get('doctor_id'))
+            except (TypeError, ValueError):
+                return jsonify({"status": "error", "message": "Especialista seleccionado inválido."})
+
             id_sala = obtener_sala_segun_tratamiento(tratamiento_js)
 
-            # Validar colisiones de tiempo (excluyendo la misma cita si es edición)
             check_sql = """SELECT COUNT(*) FROM tblcita c
                            LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
                            WHERE c.fecha = ? 
@@ -293,14 +291,11 @@ def acciones_post():
                 return jsonify({"status": "error", "message": "El especialista o consultorio ya está reservado en este horario."})
 
             if edit_id and edit_id not in ["null", "undefined", ""]:
-                # REPROGRAMAR CITA
                 cursor.execute("""UPDATE tblcita 
                                   SET fecha = ?, hora_inicio = ?, hora_fin = ?, id_odontologo = ?, id_sala = ? 
                                   WHERE id_cita = ?""", [fecha, hora_inicio, hora_fin, id_odontologo, id_sala, edit_id])
-                
                 cursor.execute("UPDATE tblagenda SET id_estado = 3 WHERE id_cita = ?", [edit_id])
             else:
-                # NUEVA CITA
                 cursor.execute("""INSERT INTO tblcita (fecha, hora_inicio, hora_fin, id_usuario, id_odontologo, id_sala) 
                       VALUES (?, ?, ?, ?, ?, ?)""", 
                    [fecha, hora_inicio, hora_fin, id_usuario_sesion, id_odontologo, id_sala])
@@ -308,12 +303,12 @@ def acciones_post():
                 nuevo_id = cursor.lastrowid
                 cursor.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, 1)", [nuevo_id])
 
-            conexion.commit() # Confirmación atómica limpia
+            conexion.commit()
             return jsonify({"status": "success", "message": "Completado"})
 
     except Exception as e:
         if conexion:
-            conexion.rollback() # Si algo falla deshace los cambios evitando registros corruptos
+            conexion.rollback()
         return jsonify({"status": "error", "message": f"Error de DB: {str(e)}"})
     finally:
         if conexion:
