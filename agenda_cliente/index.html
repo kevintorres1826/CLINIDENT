@@ -100,10 +100,8 @@
                 </div>
                 <div class="field-box">
                     <label for="doc">Especialista Asignado</label>
-                    <select id="doc" name="doc" onchange="actualizarAgenda()">
-                        <option value="Dr. Alberto Casas (General)">Dr. Alberto Casas (General)</option>
-                        <option value="Dra. Elena Marín (Ortodoncia)">Dra. Elena Marín (Ortodoncia)</option>
-                        <option value="Dr. Camilo Ruiz (Cirugía)">Dr. Camilo Ruiz (Cirugía)</option>
+                    <select id="doc" name="doc" onchange="actualizarAgenda()" required>
+                        <option value="">Cargando especialistas...</option>
                     </select>
                 </div>
             </div>

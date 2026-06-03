@@ -3,7 +3,7 @@
  * Archivo: agenda_cliente.js
  */
 
-const API_URL = "agenda_cliente.php";
+const API_URL = "/agenda_cliente/agenda_cliente";
 
 // Catálogo de Tratamientos del Sistema
 const TRATAMIENTOS = [
@@ -44,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
         inputFecha.min = hoy;
     }
 
+    cargarOdontologos();
+
     cambiarVista('menu');
 });
 
@@ -60,6 +62,23 @@ function cambiarVista(vistaId) {
 // =========================================================================
 // ─── FLUJO: TRATAMIENTOS (PANTALLA 1)
 // =========================================================================
+function cargarOdontologos() {
+    fetch(`${API_URL}?action=get_odontologos`)
+        .then(res => res.json())
+        .then(response => {
+            if (response.status === "success") {
+                const selectDoc = document.getElementById("doc"); // Asegúrate que tu <select> tenga id="doc"
+                selectDoc.innerHTML = '<option value="">Seleccione un especialista</option>';
+                response.data.forEach(doc => {
+                    let option = document.createElement("option");
+                    option.value = doc.id; // Aquí enviamos el ID real de la BD
+                    option.text = doc.nombre;
+                    selectDoc.appendChild(option);
+                });
+            }
+        });
+}
+
 function abrirSelectorTratamiento() {
     document.getElementById("edit-id").value = "";
     document.getElementById("titulo-agendar").innerText = "Planifica tu visita";
@@ -140,13 +159,12 @@ function volverATratamiento() {
 // =========================================================================
 function actualizarAgenda() {
     const fecha = document.getElementById("fecha").value;
-    const doctor = document.getElementById("doc").value;
+    const doctorId = document.getElementById("doc").value; // Obtenemos el ID del select
     const editId = document.getElementById("edit-id").value;
 
-    if (!fecha) return;
+    if (!fecha || !doctorId) return; // Si no hay doctor seleccionado, no buscamos
 
-    // Enviamos el editId al backend para liberar la propia hora de la cita en edición
-    let url = `${API_URL}?action=get_citas_ocupadas&fecha=${fecha}&doctor=${encodeURIComponent(doctor)}`;
+    let url = `${API_URL}?action=get_citas_ocupadas&fecha=${fecha}&doctor=${encodeURIComponent(doctorId)}`;
     if (editId) {
         url += `&edit_id=${editId}`;
     }
@@ -200,21 +218,23 @@ function seleccionarHoraSlot(elemento, hora) {
 function finalizarAgendado() {
     const editId = document.getElementById("edit-id").value;
     const fecha = document.getElementById("fecha").value;
-    const doctor = document.getElementById("doc").value;
+    const doctorId = document.getElementById("doc").value; // Cambiamos el nombre de la variable
     const hora = document.getElementById("hora-seleccionada").value;
 
-    if (!fecha || !hora) {
-        mostrarToast("⚠️ Por favor selecciona una fecha y horario.");
+    if (!fecha || !hora || !doctorId) { // Validamos también el doctorId
+        mostrarToast("⚠️ Por favor selecciona fecha, horario y especialista.");
         return;
     }
 
     const payload = {
         edit_id: editId ? editId : null,
-        doctor: doctor,
+        doctor_id: doctorId, // Enviamos el ID numérico
         fecha: fecha,
         hora: hora,
         tratamiento: tratamientoSeleccionado ? tratamientoSeleccionado.nombre : "Limpieza Dental"
     };
+    // ... resto del fetch igual ...
+
 
     fetch(API_URL, {
         method: "POST",

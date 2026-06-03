@@ -17,31 +17,23 @@ RUTA_BD = os.path.join(ruta_base, "clinident.db")
 # Creamos el Blueprint para el módulo de agenda de clientes
 agenda_blueprint = Blueprint('agenda_blueprint', __name__)
 
-def obtener_id_odontologo_y_sala(doctor_name, tratamiento_name):
-    """Mapea el string del Especialista de JS al ID real de la base de datos"""
-    id_odontologo = 5  # Dr. Alberto Casas / Fernández
-    id_sala = 2        # Consultorio 1
+def obtener_odontologos_disponibles():
+    """Consulta la DB para traer odontólogos reales (rol 2)"""
+    conexion = sqlite3.connect(RUTA_BD)
+    conexion.row_factory = sqlite3.Row
+    cursor = conexion.cursor()
+    # Filtramos por rol 2 (odontólogo) según tu base de datos
+    cursor.execute("SELECT id_usuario, nombre, apellido FROM tblusuario WHERE id_rol = 2 AND estado = 'Activo'")
+    odontologos = cursor.fetchall()
+    conexion.close()
+    return [{"id": o['id_usuario'], "nombre": f"Dr. {o['nombre']} {o['apellido']}"} for o in odontologos]
 
-    if 'Marín' in doctor_name or 'William Alton' in doctor_name or 'Willy' in doctor_name:
-        id_odontologo = 3  # Dr. William Alton / Elena Marín
-        id_sala = 3        # Consultorio 2
-    elif 'Ruiz' in doctor_name or 'Michael Phillips' in doctor_name or 'Mike' in doctor_name:
-        id_odontologo = 4  # Dr. Michael Phillips / Camilo Ruiz
-        if tratamiento_name == "Cirugía Oral":
-            id_sala = 4    # Sala de Cirugía
-        else:
-            id_sala = 2    # Consultorio 1
-    else:
-        if tratamiento_name == "Limpieza Dental":
-            id_sala = 5    # Sala de Limpieza
-            
-    return id_odontologo, id_sala
-
-def obtener_nombre_doctor_js(id_odontologo):
-    """Mapea los IDs internos de odontólogos a los nombres legibles por tu JS"""
-    if id_odontologo == 3: return "Dr. William Alton (Ortodoncia)"
-    if id_odontologo == 4: return "Dr. Michael Phillips (Cirugía)"
-    return "Dr. Alberto Fernández (General)"
+def obtener_sala_segun_tratamiento(tratamiento_name):
+    """Asignación lógica de salas basada únicamente en el tratamiento"""
+    if tratamiento_name == "Cirugía Oral": return 4
+    if tratamiento_name == "Limpieza Dental": return 5
+    if tratamiento_name == "Ortodoncia": return 3
+    return 2 # Consultorio base por defecto
 
 # =========================================================================
 # ─── ACCIONES GET (CONSULTAS DE DATOS)
@@ -64,6 +56,10 @@ def acciones_get():
         })
 
     # A. OBTENER HORARIOS OCUPADOS
+    elif action == 'get_odontologos':
+        return jsonify({"status": "success", "data": obtener_odontologos_disponibles()})
+
+
     elif action == 'get_citas_ocupadas':
         fecha = request.args.get('fecha', '')
         doctor_name = request.args.get('doctor', '')
@@ -273,7 +269,8 @@ def acciones_post():
             hora_fin_obj = hora_obj + timedelta(minutes=minutos)
             hora_fin = hora_fin_obj.strftime("%H:%M:%S")
 
-            id_odontologo, id_sala = obtener_id_odontologo_y_sala(doctor_name, tratamiento_js)
+            id_odontologo = int(input_data.get('doctor_id')) 
+            id_sala = obtener_sala_segun_tratamiento(tratamiento_js)
 
             # Validar colisiones de tiempo (excluyendo la misma cita si es edición)
             check_sql = """SELECT COUNT(*) FROM tblcita c
@@ -305,7 +302,8 @@ def acciones_post():
             else:
                 # NUEVA CITA
                 cursor.execute("""INSERT INTO tblcita (fecha, hora_inicio, hora_fin, id_usuario, id_odontologo, id_sala) 
-                                  VALUES (?, ?, ?, ?, ?, ?)""", [fecha, hora_inicio, hora_fin, id_usuario_sesion, id_odontologo, id_sala])
+                      VALUES (?, ?, ?, ?, ?, ?)""", 
+                   [fecha, hora_inicio, hora_fin, id_usuario_sesion, id_odontologo, id_sala])
                 
                 nuevo_id = cursor.lastrowid
                 cursor.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, 1)", [nuevo_id])
