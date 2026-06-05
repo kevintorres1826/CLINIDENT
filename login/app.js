@@ -1,5 +1,5 @@
 // ==========================================
-// ── 1. MOTOR DE CAMBIO DE PANTALLAS (Tu Lógica Local) ──
+// ── 1. MOTOR DE CAMBIO DE PANTALLAS ──
 // ==========================================
 function go(screenId) {
     document.querySelectorAll('.forms-panel .screen').forEach(s => s.classList.remove('active'));
@@ -8,7 +8,7 @@ function go(screenId) {
 }
 
 // Alternar entre el flujo de Login y Registro desde el Panel Fijo
-let modoActual = "login"; // "login" o "registro"
+let modoActual = "login"; 
 
 function alternarFormularios() {
     const title = document.getElementById('welcome-title');
@@ -23,28 +23,29 @@ function alternarFormularios() {
         label.innerText = "¿Ya tienes una cuenta?";
         button.innerText = "Iniciar Sesión";
         
-        // CORRECCIÓN CRÍTICA: Nos aseguramos de limpiar los "hide" y "show" previos de jQuery
+        // Limpieza preventiva de jQuery
         $('#step-2').hide();
         $('#step-1').show(); 
         $('#btn-envio').show();
         $('#loader').hide();
         
-        go('step-1'); // Salta directamente a la pantalla de tu registro de forma activa
+        go('step-1'); 
     } else {
         modoActual = "login";
         title.innerText = "¡Bienvenido de nuevo!";
         text.innerText = "Accede a tu panel clínico para gestionar tus citas, tratamientos e historial médico premium.";
         label.innerText = "¿No tienes una cuenta?";
         button.innerText = "Registrarse aquí";
-        go('screen-login'); // Vuelve al login principal
+        go('screen-login'); 
     }
 }
 
 // ==========================================
-// ── 2. MÓDULO LOGIC LOGIN & RECUPERACIÓN (Adaptado a Python) ──
+// ── 2. MÓDULO LOGIN & RECUPERACIÓN (Python) ──
 // ==========================================
 let contactoRecuperacion = '';
-let metodoVerif = 'correo';
+let metodoVerif = 'correo'; // 👈 Declarada una única vez aquí de manera global
+
 function handleLogin() {
     const user = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value;
@@ -54,15 +55,13 @@ function handleLogin() {
         return;
     }
 
-    // 🚀 CONTROL ANTIFALLOS: Si por alguna razón config.js no cargó, 
-    // le asignamos el puerto por defecto para que no se vuelva 'undefined'
+    // CONTROL ANTIFALLOS: urlBase blindada por si config.js no responde a tiempo
     const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
 
     const datos = new FormData();
     datos.append('usuario', user);
     datos.append('contrasena', pass);
 
-    // Cambiamos `${API_BASE_URL}` por `${urlBase}` que está blindada
     fetch(`${urlBase}/login/login`, {
         method: 'POST',
         credentials: 'include',
@@ -71,15 +70,12 @@ function handleLogin() {
         },
         body: JSON.stringify(Object.fromEntries(datos)) 
     })
-    // ... resto de tu código fetch permanece igual
-
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
             alert("¡Inicio de sesión correcto!");
             window.location.href = "../agenda_cliente/index.html"; 
         } else {
-            // 🚀 CONTROL ANTIFALLOS: Si data.message o data.msg no existen, muestra un texto genérico
             const mensajeError = data.message || data.msg || "Credenciales incorrectas o error interno.";
             alert("Error: " + mensajeError);
         }
@@ -122,12 +118,14 @@ function enviarCodigoVerificacion() {
     }
     contactoRecuperacion = valorInput;
 
+    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
+
     const datos = new FormData();
     datos.append('accion', 'enviar_codigo');
     datos.append('metodo', metodoVerif);
     datos.append('valor', contactoRecuperacion);
 
-    fetch(`${API_BASE_URL}/login/recuperacion`, { // <-- Cambiado de recuperacion.php al .exe
+    fetch(`${urlBase}/login/recuperacion`, { 
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -180,13 +178,15 @@ function guardarNuevaPassword() {
         return;
     }
 
+    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
+
     const datos = new FormData();
     datos.append('accion', 'actualizar_password');
     datos.append('metodo', metodoVerif);
     datos.append('valor', contactoRecuperacion);
     datos.append('password', p1);
 
-    fetch(`${API_BASE_URL}/login/recuperacion`, { // <-- Cambiado de recuperacion.php al .exe
+    fetch(`${urlBase}/login/recuperacion`, { 
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -207,7 +207,7 @@ function guardarNuevaPassword() {
 }
 
 // ==========================================
-// ── 3. MÓDULO LOGIC REGISTRO (Adaptado con Fetch para el .exe) ──
+// ── 3. MÓDULO LOGIC REGISTRO (jQuery) ──
 // ==========================================
 $(document).ready(function() {
     // Visibilidad de contraseñas
@@ -245,7 +245,6 @@ $(document).ready(function() {
         $('#btn-envio').hide();
         $('#loader').show();
 
-        // Convertimos los datos del formulario en un objeto JSON nativo para Python
         const datosRegistro = {
             nombre: nom,
             apellido: ape,
@@ -254,8 +253,9 @@ $(document).ready(function() {
             password: pass
         };
 
-        // Migrado a fetch para usar de forma segura API_BASE_URL y credentials
-        fetch(`${API_BASE_URL}/Registro/registro`, { 
+        const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
+
+        fetch(`${urlBase}/Registro/registro`, { 
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -294,7 +294,7 @@ $(document).ready(function() {
                 localStorage.setItem('clinident_usuario_nombre', nom);
             }
             
-            // 1. Limpiamos los campos del registro por seguridad
+            // Limpieza de campos post-registro
             $('#nom').val('');
             $('#ape').val('');
             $('#email').val('');
@@ -303,12 +303,10 @@ $(document).ready(function() {
             $('#input-codigo').val('');
             $('#acepto-datos').prop('checked', false);
             
-            // 2. Reseteamos por completo las propiedades display nativas de jQuery
             $('#step-2').hide();
             $('#step-1').show();
             $('#btn-envio').prop('disabled', true).show(); 
             
-            // 3. Redirección automática a la carpeta corregida sin espacios
             window.location.href = '../agenda_cliente/index.html';
             
         } else {
