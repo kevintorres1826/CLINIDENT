@@ -353,3 +353,28 @@ function mostrarToast(mensaje) {
     toast.classList.add("show");
     setTimeout(() => { toast.classList.remove("show"); }, 3500);
 }
+
+
+
+// AGREGA ESTO AL FINAL DE TU AGENDA_CLIENTE.JS
+function cerrarSesion() {
+    if (!confirm("¿Estás seguro de que deseas cerrar tu sesión actual?")) return;
+
+    // Petición al servidor para destruir las cookies de sesión
+    fetch('/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            // Redirección directa a la pantalla de login
+            window.location.href = '/web/login/login.html';
+        }
+    })
+    .catch(err => {
+        console.error("Error al cerrar sesión:", err);
+        // Si falla la red, forzamos la salida de todos modos
+        window.location.href = '/web/login/login.html';
+    });
+}

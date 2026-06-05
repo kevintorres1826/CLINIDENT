@@ -263,3 +263,35 @@ body {
     .report-item { flex-direction: column; align-items: flex-start; }
     .actions-btns { width: 100%; justify-content: flex-end; margin-top: 10px; }
 }
+
+
+/* ==========================================
+   ESTILOS PARA EL BOTÓN DE CERRAR SESIÓN 
+   ========================================== */
+.btn-logout {
+    background: #ef4444; /* Rojo vibrante */
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.btn-logout:hover {
+    background: #dc2626; /* Rojo más oscuro al pasar el mouse */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+}
+
+.btn-logout:active {
+    transform: translateY(0);
+}

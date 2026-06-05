@@ -1,5 +1,5 @@
-import socket  # Librería nativa para verificar la disponibilidad de puertos
-from flask import Flask, send_from_directory
+import socket  # Librería nativa para verificar la disponibilidad de puerto
+from flask import Flask, send_from_directory, session, jsonify, redirect
 from flask_cors import CORS
 from datetime import timedelta
 import os
@@ -361,13 +361,35 @@ def index():
         "message": "⚡ Servidor Clínico de Clinident corriendo perfectamente en Python ⚡"
     }
 
-# --- MOTOR DE FRONTEND INTEGRADO DESDE EL EXE ---
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    """ Destruye la sesión actual del usuario de forma segura """
+    session.clear()  # Borra el id_usuario, nombre, etc. de la memoria
+    return jsonify({"status": "success", "message": "Sesión eliminada con éxito"})
+
+
+# --- MOTOR DE FRONTEND INTEGRADO CON PROTECCIÓN DE RUTAS (SOLO UNO) ---
 @app.route('/web/<carpeta>/<archivo>', methods=['GET'])
 def servir_frontend(carpeta, archivo):
     """
-    Ruta dinámica para abrir la web directo mediante HTTP sin bloqueos de navegador.
+    Ruta dinámica para abrir la web. Incluye un sistema de protección
+    para evitar accesos a páginas incorrectas según el estado de la sesión.
     """
-    # CAMBIO AQUÍ: Cambiamos 'ruta_base' por 'ruta_frontend'
+    
+    # 🚨 GUARDIA 1: Si ya inició sesión e intenta volver al Login, lo mandamos a la Agenda
+    if carpeta == 'login' and archivo == 'login.html':
+        if 'id_usuario' in session:
+            print(f"🔄 Usuario con ID {session['id_usuario']} ya activo. Redirigiendo a la agenda.")
+            return redirect('/web/agenda_cliente/index.html')
+
+    # 🚨 GUARDIA 2: Si NO ha iniciado sesión e intenta meterse a la Agenda, lo mandamos al Login
+    if carpeta == 'agenda_cliente' and archivo == 'index.html':
+        if 'id_usuario' not in session:
+            print("🚫 Intento de acceso no autorizado a la agenda. Redirigiendo al Login.")
+            return redirect('/web/login/login.html')
+
+    # Si todo está en orden, sirve el archivo de forma normal
     carpeta_modulo = os.path.join(ruta_frontend, carpeta)
     return send_from_directory(carpeta_modulo, archivo)
 
@@ -395,4 +417,5 @@ if __name__ == '__main__':
     print(f" 📌 Dirección local activa: http://127.0.0.1:{puerto_final}")
     print("="*60 + "\n")
     
-    app.run(debug=True, port=puerto_final)
+    # CAMBIO AQUÍ: Cambiamos debug=True por debug=False para blindar el .exe
+    app.run(debug=False, port=puerto_final)
