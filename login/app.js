@@ -55,36 +55,27 @@ function handleLogin() {
         return;
     }
 
-    // CONTROL ANTIFALLOS: urlBase blindada por si config.js no responde a tiempo
     const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
-
-    const datos = new FormData();
-    datos.append('usuario', user);
-    datos.append('contrasena', pass);
 
     fetch(`${urlBase}/login/login`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify(Object.fromEntries(datos)) 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario: user, contrasena: pass })  // ← directo, sin FormData
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
-            alert("¡Inicio de sesión correcto!");
-            window.location.href = "../agenda_cliente/index.html"; 
-        } else {
-            const mensajeError = data.message || data.msg || "Credenciales incorrectas o error interno.";
-            alert("Error: " + mensajeError);
-        }
-    })
+    if (data.status === 'success') {
+        window.location.href = data.redirect; // ← usa directo el redirect del servidor
+    } else {
+        alert('⚠️ ' + (data.message || data.msg || 'Credenciales incorrectas.'));
+    }
+})
     .catch(error => {
         console.error("Error en la petición:", error);
-        alert("Error al intentar conectar con el servidor local.");
+        alert("❌ No se pudo conectar con el servidor.");
     });
-} 
+}
 
 function seleccionarMetodo(tipo) {
     metodoVerif = tipo;

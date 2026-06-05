@@ -46,28 +46,51 @@
                 <span class="doc-name">Dr. Alberto Casas</span>
             </div>
  
-            <div class="filtro-bar">
-                <label>VER FECHA:</label>
-                <input type="date" id="filtro-fecha" onchange="renderAgenda()">
-                <button class="btn-hoy" onclick="irHoy()">📅 Hoy</button>
+            <!-- PESTAÑAS -->
+            <div class="tabs-bar">
+                <button class="tab-btn active" id="tab-dia"    onclick="cambiarTab('dia')">📅 Por fecha</button>
+                <button class="tab-btn"        id="tab-todas"  onclick="cambiarTab('todas')">📋 Todas las citas</button>
             </div>
  
-            <div class="stats-row">
-                <div class="stat-card">
-                    <div class="num" id="stat-total">0</div>
-                    <div class="lbl">Citas del día</div>
+            <!-- ── PESTAÑA 1: POR FECHA ── -->
+            <div id="panel-dia">
+                <div class="filtro-bar">
+                    <label>VER FECHA:</label>
+                    <input type="date" id="filtro-fecha" onchange="renderAgenda()">
+                    <button class="btn-hoy" onclick="irHoy()">📅 Hoy</button>
                 </div>
-                <div class="stat-card">
-                    <div class="num" id="stat-pendientes">0</div>
-                    <div class="lbl">Pendientes</div>
+ 
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="num" id="stat-total">0</div>
+                        <div class="lbl">Citas del día</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="stat-pendientes">0</div>
+                        <div class="lbl">Pendientes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="stat-atendidos">0</div>
+                        <div class="lbl">Atendidos</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="num" id="stat-atendidos">0</div>
-                    <div class="lbl">Atendidos</div>
-                </div>
+ 
+                <div id="lista-agenda"></div>
             </div>
  
-            <div id="lista-agenda"></div>
+            <!-- ── PESTAÑA 2: TODAS LAS CITAS ── -->
+            <div id="panel-todas" style="display:none">
+                <div class="filtro-bar">
+                    <label>FILTRAR:</label>
+                    <button class="btn-filtro active" id="f-todas"       onclick="filtrarTodas('')">Todas</button>
+                    <button class="btn-filtro"        id="f-programada"  onclick="filtrarTodas('programada')">⏳ Pendientes</button>
+                    <button class="btn-filtro"        id="f-completada"  onclick="filtrarTodas('completada')">✅ Completadas</button>
+                    <button class="btn-filtro"        id="f-cancelada"   onclick="filtrarTodas('cancelada')">❌ Canceladas</button>
+                </div>
+ 
+                <div id="lista-todas"></div>
+            </div>
+ 
         </div>
     </div>
  
@@ -77,3 +100,4 @@
     <script src="panel_medico.js"></script>
 </body>
 </html>
+ 

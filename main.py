@@ -10,7 +10,8 @@ import sqlite3  # Librería nativa para interactuar con SQLite
 from login.login import login_blueprint
 from login.recuperacion import recuperacion_blueprint
 from login.registro import registro_blueprint           
-from agenda_cliente.agenda_cliente import agenda_blueprint  
+from agenda_cliente.agenda_cliente import agenda_blueprint 
+from odontologo.odontologo import odontologo_blueprint 
 
 app = Flask(__name__)
 
@@ -353,6 +354,7 @@ app.register_blueprint(login_blueprint, url_prefix='/login')
 app.register_blueprint(recuperacion_blueprint, url_prefix='/login')
 app.register_blueprint(registro_blueprint, url_prefix='/Registro')
 app.register_blueprint(agenda_blueprint, url_prefix='/agenda_cliente')
+app.register_blueprint(odontologo_blueprint, url_prefix='/odontologo')
 
 @app.route('/', methods=['GET'])
 def index():
@@ -388,10 +390,20 @@ def servir_frontend(carpeta, archivo):
         if 'id_usuario' not in session:
             print("🚫 Intento de acceso no autorizado a la agenda. Redirigiendo al Login.")
             return redirect('/web/login/login.html')
+        
+    if carpeta == 'odontologo':
+        if 'id_usuario' not in session:
+            print("🚫 Acceso no autorizado al panel médico. Redirigiendo al Login.")
+            return redirect('/web/login/login.html')
+        if session.get('id_rol') != 2:
+            print("🚫 Rol insuficiente para el panel médico.")
+            return redirect('/web/login/login.html')
 
     # Si todo está en orden, sirve el archivo de forma normal
     carpeta_modulo = os.path.join(ruta_frontend, carpeta)
     return send_from_directory(carpeta_modulo, archivo)
+
+    
 
 # --- FUNCIÓN INTELIGENTE DE PORTABILIDAD ---
 def encontrar_puerto_libre(puerto_inicial):

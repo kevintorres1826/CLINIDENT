@@ -69,10 +69,10 @@ def ejecutar_login():
                 
                 # Mapeo de rutas dinámicas según el rol
                 rutas = {
-                    1: '../odontologo/panel_medico.html',  # Administrador
-                    2: '../odontologo/panel_medico.html',  # Odontólogo
-                    3: '../odontologo/panel_medico.html',  # Recepcionista
-                    4: '../agenda_cliente/index.html'      # Paciente (Corregido espacio a guion bajo)
+                    1: '/web/odontologo/panel_medico.html',
+                    2: '/web/odontologo/panel_medico.html',
+                    3: '/web/Recepcionista/panel_medico.html',
+                    4: '/web/agenda_cliente/index.html'
                 }
                 
                 redireccion = rutas.get(usuario['id_rol'], '../agenda_cliente/index.html')
@@ -81,7 +81,8 @@ def ejecutar_login():
                     'status': 'success',
                     'msg': '¡Ingreso correcto!',
                     'redirect': redireccion,
-                    'nombre': usuario['nombre']
+                    'nombre': usuario['nombre'],
+                    'id_rol': usuario['id_rol'] 
                 })
             else:
                 return jsonify({'status': 'error', 'msg': '⚠️ Correo o contraseña incorrectos.'})
