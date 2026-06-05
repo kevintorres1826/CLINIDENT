@@ -1,40 +1,64 @@
+CSS
 :root {
     --primary: #0f172a;
     --accent: #0ea5e9;
     --bg: #f8fafc;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
 }
-
+ 
+/* ─── BASE ─── */
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: var(--bg);
     color: var(--primary);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     min-height: 100vh;
 }
-
+ 
+/* ─── NAVBAR ─── */
 .navbar {
     width: 100%;
     background: white;
-    padding: 20px 0;
-    text-align: center;
+    padding: 18px 40px;
     border-bottom: 1px solid #e2e8f0;
-    margin-bottom: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
 }
-
+ 
 .logo-container { font-weight: 800; font-size: 24px; }
 .accent-text { color: var(--accent); }
-
+ 
+.btn-back {
+    background: #f1f5f9;
+    color: var(--primary);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+ 
+/* ─── VISTA PANEL MÉDICO ─── */
+#vista-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+}
+ 
 .welcome-section {
     text-align: center;
-    margin-bottom: 40px;
+    margin: 40px 0;
 }
-
+ 
 .welcome-section h1 { font-size: 2.5rem; margin-bottom: 10px; }
 .welcome-section p { color: #64748b; font-size: 1.1rem; }
-
+ 
 .menu-doctor {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -42,7 +66,7 @@ body {
     width: 90%;
     max-width: 850px;
 }
-
+ 
 .card-opcion {
     background: white;
     padding: 50px 30px;
@@ -56,17 +80,17 @@ body {
     flex-direction: column;
     justify-content: center;
 }
-
+ 
 .card-opcion:hover {
     transform: translateY(-10px);
     border-color: var(--accent);
     box-shadow: 0 20px 40px rgba(14, 165, 233, 0.1);
 }
-
+ 
 .icon { font-size: 60px; margin-bottom: 20px; display: block; }
 h3 { font-size: 1.6rem; margin: 15px 0; }
 p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
-
+ 
 .btn-logout {
     margin-top: 60px;
     background: none;
@@ -77,10 +101,145 @@ p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
     color: #64748b;
     cursor: pointer;
     transition: 0.2s;
+    font-family: inherit;
 }
-
+ 
 .btn-logout:hover {
     background: #fee2e2;
     color: #ef4444;
     border-color: #fecaca;
 }
+ 
+/* ─── VISTA AGENDA ─── */
+.container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+ 
+.header-agenda {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+ 
+.header-agenda h2 { margin: 0; font-size: 1.8rem; color: var(--primary); }
+.doc-name { color: #64748b; font-weight: 600; }
+ 
+.filtro-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    padding: 14px 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+ 
+.filtro-bar label { font-weight: 700; font-size: 0.9rem; color: #64748b; }
+ 
+.filtro-bar input[type="date"] {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+}
+ 
+.btn-hoy {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+ 
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+ 
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+}
+ 
+.stat-card .num { font-size: 2rem; font-weight: 800; color: var(--accent); }
+.stat-card .lbl { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+ 
+.cita-card {
+    background: white;
+    border-radius: 18px;
+    padding: 22px 25px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    border-left: 5px solid var(--accent);
+    transition: transform 0.2s;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+ 
+.cita-card:hover { transform: translateX(4px); }
+.cita-hora { font-size: 1.5rem; font-weight: 800; color: var(--accent); min-width: 100px; }
+.cita-info { flex: 1; padding: 0 20px; }
+.cita-info .paciente { font-weight: 700; font-size: 1.1rem; }
+.cita-info .detalle { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
+ 
+.badge { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+.badge-pendiente { background: #fef3c7; color: #d97706; }
+.badge-atendido  { background: #d1fae5; color: #059669; }
+ 
+.btn-atender {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+ 
+.btn-atender:disabled { background: #e2e8f0; color: #94a3b8; cursor: default; }
+ 
+.empty-msg {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    background: white;
+    border-radius: 20px;
+}
+ 
+/* ─── TOAST ─── */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--success);
+    color: white;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    z-index: 999;
+}
+ 
+.toast.show { opacity: 1; transform: translateY(0); }

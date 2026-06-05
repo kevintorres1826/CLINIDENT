@@ -7,29 +7,73 @@
     <link rel="stylesheet" href="panel_medico.css">
 </head>
 <body>
+ 
+    <!-- NAVBAR -->
     <nav class="navbar">
         <div class="logo-container">CLINI<span class="accent-text">DENT</span></div>
+        <button class="btn-back" id="btn-volver" onclick="mostrarPanel()" style="display:none">← Volver al Panel</button>
     </nav>
-
-    <div class="welcome-section">
-        <h1>Panel del Especialista</h1>
-        <p>Bienvenido, <b>Dr. Alberto Casas</b></p>
-    </div>
-
-    <div class="menu-doctor">
-        <div class="card-opcion" onclick="window.location.href='odontologoagenda.html'">
-            <span class="icon">📅</span>
-            <h3>Ver Citas</h3>
-            <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de atención.</p>
+ 
+    <!-- ===== VISTA: PANEL MÉDICO ===== -->
+    <div id="vista-panel">
+        <div class="welcome-section">
+            <h1>Panel del Especialista</h1>
+            <p>Bienvenido, <b>Dr. Alberto Casas</b></p>
         </div>
-
-        <div class="card-opcion" onclick="window.location.href='../historial/historial.html'">
-            <span class="icon">📁</span>
-            <h3>Registro e Historial</h3>
-            <p class="desc">Crea nuevas fichas médicas y accede a los antecedentes clínicos de todos tus pacientes.</p>
+ 
+        <div class="menu-doctor">
+            <div class="card-opcion" onclick="mostrarAgenda()">
+                <span class="icon">📅</span>
+                <h3>Ver Citas</h3>
+                <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de atención.</p>
+            </div>
+ 
+            <div class="card-opcion" onclick="window.location.href='../historial/historial.html'">
+                <span class="icon">📁</span>
+                <h3>Registro e Historial</h3>
+                <p class="desc">Crea nuevas fichas médicas y accede a los antecedentes clínicos de todos tus pacientes.</p>
+            </div>
+        </div>
+ 
+        <button class="btn-logout" onclick="window.location.href='../login/login.html'">Cerrar Sesión Segura</button>
+    </div>
+ 
+    <!-- ===== VISTA: AGENDA ===== -->
+    <div id="vista-agenda" style="display:none">
+        <div class="container">
+            <div class="header-agenda">
+                <h2>📅 Mi Agenda</h2>
+                <span class="doc-name">Dr. Alberto Casas</span>
+            </div>
+ 
+            <div class="filtro-bar">
+                <label>VER FECHA:</label>
+                <input type="date" id="filtro-fecha" onchange="renderAgenda()">
+                <button class="btn-hoy" onclick="irHoy()">📅 Hoy</button>
+            </div>
+ 
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="num" id="stat-total">0</div>
+                    <div class="lbl">Citas del día</div>
+                </div>
+                <div class="stat-card">
+                    <div class="num" id="stat-pendientes">0</div>
+                    <div class="lbl">Pendientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="num" id="stat-atendidos">0</div>
+                    <div class="lbl">Atendidos</div>
+                </div>
+            </div>
+ 
+            <div id="lista-agenda"></div>
         </div>
     </div>
-
-    <button class="btn-logout" onclick="window.location.href='../login/login.html'">Cerrar Sesión Segura</button>
+ 
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+ 
+    <script src="panel_medico.js"></script>
 </body>
 </html>
