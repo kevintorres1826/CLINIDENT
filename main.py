@@ -16,12 +16,18 @@ app = Flask(__name__)
 
 # OBTENER LA RUTA REAL DONDE SE EJECUTA EL .EXE O EL SCRIPT
 if getattr(sys, 'frozen', False):
-    ruta_base = os.path.dirname(sys.executable)
+    # 1. ruta_exe: Donde el usuario puso el .exe (Ej: Escritorio). Útil para la BD.
+    ruta_exe = os.path.dirname(sys.executable)
+    
+    # 2. ruta_frontend: La carpeta temporal donde PyInstaller esconde tus HTML/CSS
+    ruta_frontend = sys._MEIPASS 
 else:
-    ruta_base = os.path.dirname(os.path.abspath(__file__))
+    # Modo desarrollo normal
+    ruta_exe = os.path.dirname(os.path.abspath(__file__))
+    ruta_frontend = ruta_exe
 
-RUTA_BD = os.path.join(ruta_base, "clinident.db")
-
+# La base de datos SIEMPRE se guarda afuera, usando ruta_exe
+RUTA_BD = os.path.join(ruta_exe, "clinident.db")
 # 🚀 FUNCIÓN DE AUTOREPARACIÓN DE BASE DE DATOS COMPLETA
 def inicializar_base_de_datos():
     """ 
@@ -360,9 +366,9 @@ def index():
 def servir_frontend(carpeta, archivo):
     """
     Ruta dinámica para abrir la web directo mediante HTTP sin bloqueos de navegador.
-    Ejemplo: http://127.0.0.1:5000/web/login/login.html
     """
-    carpeta_modulo = os.path.join(ruta_base, carpeta)
+    # CAMBIO AQUÍ: Cambiamos 'ruta_base' por 'ruta_frontend'
+    carpeta_modulo = os.path.join(ruta_frontend, carpeta)
     return send_from_directory(carpeta_modulo, archivo)
 
 # --- FUNCIÓN INTELIGENTE DE PORTABILIDAD ---
