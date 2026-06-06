@@ -4,6 +4,8 @@
  */
 
 const API_URL = "/agenda_cliente/agenda_cliente";
+let ID_USUARIO_LOGUEADO = null;
+
 
 // Catálogo de Tratamientos del Sistema
 const TRATAMIENTOS = [
@@ -30,8 +32,22 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(res => res.json())
         .then(user => {
             if (user.status === "success") {
+                
+                ID_USUARIO_LOGUEADO = user.id;
+                
                 document.getElementById("nav-user-display").innerText = user.nombre;
                 document.getElementById("nombre-usuario-bienvenida").innerText = user.nombre;
+                
+                // 🔐 SEGURIDAD: Si el id_rol es 2 (Odontólogo), mostramos el botón de cambio
+                if (user.id_rol === 2) {
+                    const btnMedico = document.getElementById("btn-switch-medico");
+                    if (btnMedico) {
+                        btnMedico.style.display = "inline-block";
+                    }
+                }
+    
+                cargarOdontologos();
+    
             }
         })
         .catch(err => console.error("Error al obtener sesión:", err));
@@ -42,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
         inputFecha.min = hoy;
     }
 
-    cargarOdontologos();
     cambiarVista('menu');
 });
 
@@ -65,15 +80,31 @@ function cargarOdontologos() {
         .then(response => {
             if (response.status === "success") {
                 const selectDoc = document.getElementById("doc");
+                if (!selectDoc) return;
+
                 selectDoc.innerHTML = '<option value="">Seleccione un especialista</option>';
+                
                 response.data.forEach(doc => {
+                    // 🚫 FILTRO ANTI-AUTOCONSULTA: 
+                    // Si el ID del doctor coincide con el del usuario en sesión, no lo agregamos al selector
+                    // Usamos == por seguridad por si uno es string y el otro number
+                    if (doc.id == ID_USUARIO_LOGUEADO) {
+                        return; // Salta este doctor y continúa con el siguiente del bucle
+                    }
+
                     let option = document.createElement("option");
                     option.value = doc.id;
                     option.text = doc.nombre;
                     selectDoc.appendChild(option);
                 });
+
+                // Validación extra: Si el doctor se filtró y no quedaron más médicos en la lista
+                if (selectDoc.options.length <= 1) {
+                    selectDoc.innerHTML = '<option value="">No hay otros especialistas disponibles</option>';
+                }
             }
-        });
+        })
+        .catch(err => console.error("Error al cargar odontólogos:", err));
 }
 
 function abrirSelectorTratamiento() {
@@ -377,4 +408,10 @@ function cerrarSesion() {
         // Si falla la red, forzamos la salida de todos modos
         window.location.href = '/web/login/login.html';
     });
+}
+
+// ─── DIRECCIONAMIENTO A VISTA MÉDICA ───
+function irAModoMedico() {
+    // Redirecciona de vuelta al panel del especialista
+    window.location.href = '../odontologo/panel_medico.html';
 }

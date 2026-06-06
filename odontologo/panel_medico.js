@@ -133,8 +133,38 @@ function mostrarToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
  
+
+// ─── CARGAR DATOS DEL PERFIL ───
+function cargarPerfilDoctor() {
+    fetch(`${API_URL}/perfil`, {
+        method: 'GET',
+        credentials: 'include' // Vital para que Python reconozca la sesión
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Construimos el nombre con el formato "Dr. Nombre Apellido"
+            const nombreCompleto = `Dr. ${data.perfil.nombre} ${data.perfil.apellido}`;
+            
+            // Inyectamos el nombre en los dos lugares del HTML
+            document.getElementById('doctor-name-welcome').innerText = nombreCompleto;
+            document.getElementById('doctor-name-agenda').innerText = nombreCompleto;
+        } else {
+            // SEGURIDAD: Si no hay sesión válida o no es rol odontólogo, lo devolvemos al login
+            alert("Tu sesión ha expirado o no tienes acceso. Por favor, inicia sesión de nuevo.");
+            window.location.href = '../login/login.html';
+        }
+    })
+    .catch(err => {
+        console.error("Error cargando perfil:", err);
+        mostrarToast("❌ Error al cargar los datos del doctor");
+    });
+}
+
+
 // ─── INICIALIZACIÓN ───
 document.addEventListener('DOMContentLoaded', () => {
+    cargarPerfilDoctor();
     mostrarPanel();
 });
  
@@ -238,4 +268,35 @@ function marcarAtendidoYRecargar(idCita, estadoActual) {
         }
     })
     .catch(() => mostrarToast('❌ Error al conectar con el servidor.'));
+}
+
+// ─── CAMBIO DE MÓDULO ───
+function irAModoPaciente() {
+    // Redirecciona al panel de la agenda del cliente
+    window.location.href = '../agenda_cliente/index.html';
+}
+
+// ─── CERRAR SESIÓN ABSOLUTO ───
+function cerrarSesionMedico() {
+    if (!confirm("¿Estás seguro de que deseas cerrar tu sesión actual en CLINIDENT?")) return;
+
+    // Petición al servidor Flask para destruir de raíz las cookies de sesión
+    fetch('/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            // Borrado exitoso, expulsamos al usuario directo a la pantalla de login
+            // Ajusta los '../' según dónde se ubique exactamente tu login.html
+            window.location.href = '../login/login.html';
+        } else {
+            mostrarToast("❌ No se pudo cerrar la sesión correctamente");
+        }
+    })
+    .catch(err => {
+        console.error("Error al cerrar sesión:", err);
+        mostrarToast("❌ Error de conexión al cerrar sesión");
+    });
 }

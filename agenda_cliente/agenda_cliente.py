@@ -60,7 +60,8 @@ def acciones_get():
         return jsonify({
             "status": "success",
             "id": id_usuario_sesion,
-            "nombre": nombre_usuario_sesion
+            "nombre": nombre_usuario_sesion,
+            "id_rol": session.get('id_rol')
         })
 
     elif action == 'get_odontologos':

@@ -289,3 +289,55 @@ p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
 /* ─── BADGE CANCELADA ─── */
 .badge-cancelada  { background: #fee2e2; color: #dc2626; }
 .badge-programada { background: #fef3c7; color: #d97706; }
+
+
+
+/* ─── ACCIONES DE LA NAVBAR ─── */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Espacio entre el botón de volver y el de cambiar módulo */
+}
+
+.btn-switch-module {
+    background-color: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-switch-module:hover {
+    background-color: var(--accent);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+/* ─── BOTÓN DE CERRAR SESIÓN MÉDICO ─── */
+.btn-logout-medico {
+    background-color: var(--danger); /* Usa el rojo #ef4444 definido en tu :root */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-logout-medico:hover {
+    background-color: #dc2626; /* Un rojo un poco más oscuro al pasar el mouse */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}

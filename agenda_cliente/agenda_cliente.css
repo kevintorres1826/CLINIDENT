@@ -295,3 +295,26 @@ body {
 .btn-logout:active {
     transform: translateY(0);
 }
+
+
+/* ─── BOTÓN DE CAMBIO DE MÓDULO (PACIENTE A MÉDICO) ─── */
+.btn-switch-module {
+    background-color: var(--brand-light);
+    color: var(--brand-color);
+    border: 1px solid var(--brand-color);
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 8px; /* Separación del botón de salir */
+}
+
+.btn-switch-module:hover {
+    background-color: var(--brand-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}

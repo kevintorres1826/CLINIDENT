@@ -11,14 +11,24 @@
     <!-- NAVBAR -->
     <nav class="navbar">
         <div class="logo-container">CLINI<span class="accent-text">DENT</span></div>
-        <button class="btn-back" id="btn-volver" onclick="mostrarPanel()" style="display:none">← Volver al Panel</button>
+        
+        <div class="nav-actions">
+            <button class="btn-back" id="btn-volver" onclick="mostrarPanel()" style="display:none">← Volver al Panel</button>
+            <button class="btn-switch-module" onclick="irAModoPaciente()">
+                🦷 Vista Paciente
+            </button>
+
+            <button class="btn-logout-medico" onclick="cerrarSesionMedico()" title="Cerrar Sesión Completa">
+                🚪 Salir
+            </button>
+        </div>
     </nav>
  
     <!-- ===== VISTA: PANEL MÉDICO ===== -->
     <div id="vista-panel">
         <div class="welcome-section">
             <h1>Panel del Especialista</h1>
-            <p>Bienvenido, <b>Dr. Alberto Casas</b></p>
+            <p>Bienvenido, <b id="doctor-name-welcome">Cargando perfil...</b></p>
         </div>
  
         <div class="menu-doctor">
@@ -35,7 +45,6 @@
             </div>
         </div>
  
-        <button class="btn-logout" onclick="window.location.href='../login/login.html'">Cerrar Sesión Segura</button>
     </div>
  
     <!-- ===== VISTA: AGENDA ===== -->
@@ -43,7 +52,7 @@
         <div class="container">
             <div class="header-agenda">
                 <h2>📅 Mi Agenda</h2>
-                <span class="doc-name">Dr. Alberto Casas</span>
+                <span class="doc-name" id="doctor-name-agenda">Cargando perfil...</span>
             </div>
  
             <!-- PESTAÑAS -->
