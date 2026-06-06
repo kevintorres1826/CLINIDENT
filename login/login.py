@@ -71,7 +71,7 @@ def ejecutar_login():
                 rutas = {
                     1: '/web/odontologo/panel_medico.html',
                     2: '/web/odontologo/panel_medico.html',
-                    3: '/web/Recepcionista/panel_medico.html',
+                    3: '/web/recepcionista/panel_rec.html',
                     4: '/web/agenda_cliente/index.html'
                 }
                 

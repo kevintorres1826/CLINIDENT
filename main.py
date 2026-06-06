@@ -12,6 +12,7 @@ from login.recuperacion import recuperacion_blueprint
 from login.registro import registro_blueprint           
 from agenda_cliente.agenda_cliente import agenda_blueprint 
 from odontologo.odontologo import odontologo_blueprint 
+from recepcionista.agenda_recepcion import agenda_recepcion_blueprint
 
 app = Flask(__name__)
 
@@ -355,6 +356,7 @@ app.register_blueprint(recuperacion_blueprint, url_prefix='/login')
 app.register_blueprint(registro_blueprint, url_prefix='/Registro')
 app.register_blueprint(agenda_blueprint, url_prefix='/agenda_cliente')
 app.register_blueprint(odontologo_blueprint, url_prefix='/odontologo')
+app.register_blueprint(agenda_recepcion_blueprint, url_prefix='/agenda_recepcion')
 
 @app.route('/', methods=['GET'])
 def index():
