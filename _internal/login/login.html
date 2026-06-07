@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINIDENT | Portal de Acceso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="modal-overlay" id="modalLegal">
+        <div class="modal-content">
+            <h3>Política de Tratamiento de Información Personal</h3>
+            <p><b>CLINIDENT</b>, en cumplimiento de la <b>Ley 1581 de 2012</b> y el Decreto 1377 de 2013, informa a sus usuarios su política para el tratamiento de datos personales:</p>
+            <h4>1. Finalidad del Tratamiento</h4>
+            <p>Los datos personales recolectados serán utilizados para: gestión de citas odontológicas, creación de historias clínicas, contacto para seguimiento de tratamientos, envío de recordatorios y cumplimiento de obligaciones legales con las entidades de salud en Colombia.</p>
+            <button class="btn" onclick="cerrarModal()">Entendido y Cerrar</button>
+        </div>
+    </div>
+
+    <div class="split-container">
+        
+        <div class="welcome-panel">
+            <div class="welcome-content">
+                <img src="clinident_logo.png" width="90" alt="Logo Clinident" id="main-logo">
+                <h1 id="welcome-title">¡Bienvenido de nuevo!</h1>
+                <p id="welcome-text">Accede a tu panel clínico para gestionar tus citas, tratamientos e historial médico premium.</p>
+                
+                <div class="toggle-box">
+                    <span id="toggle-label">¿No tienes una cuenta?</span>
+                    <button class="btn-toggle" id="btn-switch" onclick="alternarFormularios()">Registrarse aquí</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="forms-panel">
+
+            <div class="screen active" id="screen-login">
+                <div class="card">
+                    <h2>Iniciar Sesión</h2>
+                    <p class="subtitle">Ingresa tus credenciales autorizadas</p>
+
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-envelope"></i> Correo</label>
+                        <input type="text" id="login-user" placeholder="usuario@clinident.com">
+                    </div>
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-lock"></i> Contraseña</label>
+                        <input type="password" id="login-pass" placeholder="••••••••">
+                    </div>
+
+                    <button class="btn" onclick="handleLogin()">Entrar</button>
+
+                    <p class="link-text" onclick="go('screen-recuperar')">¿Olvidaste tu contraseña?</p>
+                </div>
+            </div>
+
+            <div class="screen" id="screen-recuperar">
+                <div class="card">
+                    <h2>Recuperar Cuenta</h2>
+                    <p class="subtitle">Selecciona el método para restablecer tu clave</p>
+
+                    <button class="choice-link" onclick="seleccionarMetodo('correo')">
+                        <i class="fa-solid fa-envelope"></i> Recuperar por Correo
+                    </button>
+                    <button class="choice-link" onclick="seleccionarMetodo('telefono')">
+                        <i class="fa-solid fa-phone"></i> Recuperar por Teléfono
+                    </button>
+
+                    <p class="link-text" onclick="go('screen-login')">← Volver al inicio</p>
+                </div>
+            </div>
+
+            <div class="screen" id="screen-ingresar-dato">
+                <div class="card">
+                    <h2 id="titulo-dato">Recuperación</h2>
+                    <p class="subtitle" id="sub-dato">Escribe tus datos de contacto registrados</p>
+
+                    <div class="input-group">
+                        <label id="label-dinamico">Dato de contacto</label>
+                        <input type="text" id="input-recuperacion" placeholder="...">
+                    </div>
+
+                    <button class="btn" onclick="enviarCodigoVerificacion()">Enviar Código</button>
+                    <p class="link-text" onclick="go('screen-recuperar')">← Volver</p>
+                </div>
+            </div>
+
+            <div class="screen" id="screen-verificacion">
+                <div class="card">
+                    <h2>Código de verificación</h2>
+                    <p class="subtitle" id="verif-subtitle">Ingresa el código enviado a tu correo</p>
+
+                    <input type="text" id="codigo" placeholder="Código de 6 dígitos" maxlength="6" style="text-align:center; font-size:18px; letter-spacing:2px;">
+
+                    <button class="btn" onclick="verificarCodigo()">Verificar</button>
+
+                    <p id="error-verif" class="error-msg" style="display:none;">⚠️ Código incorrecto. Intenta de nuevo.</p>
+                    <p class="link-text" onclick="go('screen-recuperar')">← Volver a opciones</p>
+                </div>
+            </div>
+
+            <div class="screen" id="screen-nueva-pass">
+                <div class="card">
+                    <h2>Crear nueva contraseña</h2>
+                    <p class="subtitle">Asegúrate de que sea una clave segura</p>
+
+                    <div class="input-group">
+                        <label>Nueva contraseña</label>
+                        <input type="password" id="p1" placeholder="••••••••">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Confirmar contraseña</label>
+                        <input type="password" id="p2" placeholder="••••••••">
+                    </div>
+
+                    <button class="btn" onclick="guardarNuevaPassword()">Guardar contraseña</button>
+                    <p id="error-pass" class="error-msg" style="display:none;">⚠️ Las contraseñas no coinciden</p>
+                </div>
+            </div>
+
+            <div class="screen" id="step-1">
+                <div class="card">
+                    <h2>Crear Cuenta</h2>
+                    <p class="subtitle">Regístrate en nuestro sistema médico</p>
+
+                    <div class="input-group-row">
+                        <div class="input-group">
+                            <label>Nombre</label>
+                            <input type="text" id="nom" placeholder="Tu nombre">
+                        </div>
+                        <div class="input-group">
+                            <label>Apellido</label>
+                            <input type="text" id="ape" placeholder="Tu apellido">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Correo Electrónico</label>
+                        <input type="email" id="email" placeholder="nombre@correo.com">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Teléfono Celular</label>
+                        <input type="text" id="tel" placeholder="3001234567">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Contraseña</label>
+                        <div style="position:relative;">
+                            <input type="password" id="pass" placeholder="••••••••">
+                            <i class="fa-solid fa-eye toggle-password"></i>
+                        </div>
+                    </div>
+
+                    <div class="data-policy">
+                        <input type="checkbox" id="acepto-datos" onchange="validarBoton()">
+                        <p>Autorizo a <b>CLINIDENT</b> el tratamiento de mis datos personales según la <span onclick="abrirModal()">Política de Privacidad</span>.</p>
+                    </div>
+
+                    <button class="btn" id="btn-envio" onclick="simularEnvio()" disabled>Obtener Código</button>
+                    
+                    <div id="loader" style="display:none; margin-top:10px; color:#2563eb; font-size:13px; font-weight:600;">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Procesando registro...
+                    </div>
+                </div>
+            </div>
+
+            <div class="screen" id="step-2">
+                <div class="card">
+                    <h2>Confirmación</h2>
+                    <p class="subtitle" style="color: #16a34a;">Ingresa el código enviado a tu correo</p>
+                    
+                    <input type="text" id="input-codigo" style="text-align:center; font-size:24px; letter-spacing:5px; margin-bottom:15px;" maxlength="5" placeholder="_____">
+                    
+                    <button class="btn" style="background: #16a34a;" onclick="finalizarRegistro()">Finalizar Registro</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="config.js"></script>  
+    <script src="app.js"></script> </body>
+
+</body>
+</html>

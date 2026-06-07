@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CLINIDENT | Panel Médico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="panel_medico.css">
+</head>
+<body>
+ 
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo-container">CLINI<span class="accent-text">DENT</span></div>
+        
+        <div class="nav-actions">
+            <button class="btn-back" id="btn-volver" onclick="mostrarPanel()" style="display:none">← Volver al Panel</button>
+            <button class="btn-switch-module" onclick="irAModoPaciente()">
+                🦷 Vista Paciente
+            </button>
+
+            <button class="btn-logout-medico" onclick="cerrarSesionMedico()" title="Cerrar Sesión Completa">
+                🚪 Salir
+            </button>
+        </div>
+    </nav>
+ 
+    <!-- ===== VISTA: PANEL MÉDICO ===== -->
+    <div id="vista-panel">
+        <div class="welcome-section">
+            <h1>Panel del Especialista</h1>
+            <p>Bienvenido, <b id="doctor-name-welcome">Cargando perfil...</b></p>
+        </div>
+ 
+        <div class="menu-doctor">
+            <div class="card-opcion" onclick="mostrarAgenda()">
+                <span class="icon">📅</span>
+                <h3>Ver Citas</h3>
+                <p class="desc">Consulta la lista de pacientes citados para hoy y gestiona tus horarios de atención.</p>
+            </div>
+ 
+            <div class="card-opcion" onclick="window.location.href='../historial/historial.html'">
+                <span class="icon">📁</span>
+                <h3>Registro e Historial</h3>
+                <p class="desc">Crea nuevas fichas médicas y accede a los antecedentes clínicos de todos tus pacientes.</p>
+            </div>
+        </div>
+ 
+    </div>
+ 
+    <!-- ===== VISTA: AGENDA ===== -->
+    <div id="vista-agenda" style="display:none">
+        <div class="container">
+            <div class="header-agenda">
+                <h2>📅 Mi Agenda</h2>
+                <span class="doc-name" id="doctor-name-agenda">Cargando perfil...</span>
+            </div>
+ 
+            <!-- PESTAÑAS -->
+            <div class="tabs-bar">
+                <button class="tab-btn active" id="tab-dia"    onclick="cambiarTab('dia')">📅 Por fecha</button>
+                <button class="tab-btn"        id="tab-todas"  onclick="cambiarTab('todas')">📋 Todas las citas</button>
+            </div>
+ 
+            <!-- ── PESTAÑA 1: POR FECHA ── -->
+            <div id="panel-dia">
+                <div class="filtro-bar">
+                    <label>VER FECHA:</label>
+                    <input type="date" id="filtro-fecha" onchange="renderAgenda()">
+                    <button class="btn-hoy" onclick="irHoy()">📅 Hoy</button>
+                </div>
+ 
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="num" id="stat-total">0</div>
+                        <div class="lbl">Citas del día</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="stat-pendientes">0</div>
+                        <div class="lbl">Pendientes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="stat-atendidos">0</div>
+                        <div class="lbl">Atendidos</div>
+                    </div>
+                </div>
+ 
+                <div id="lista-agenda"></div>
+            </div>
+ 
+            <!-- ── PESTAÑA 2: TODAS LAS CITAS ── -->
+            <div id="panel-todas" style="display:none">
+                <div class="filtro-bar">
+                    <label>FILTRAR:</label>
+                    <button class="btn-filtro active" id="f-todas"       onclick="filtrarTodas('')">Todas</button>
+                    <button class="btn-filtro"        id="f-programada"  onclick="filtrarTodas('programada')">⏳ Pendientes</button>
+                    <button class="btn-filtro"        id="f-completada"  onclick="filtrarTodas('completada')">✅ Completadas</button>
+                    <button class="btn-filtro"        id="f-cancelada"   onclick="filtrarTodas('cancelada')">❌ Canceladas</button>
+                </div>
+ 
+                <div id="lista-todas"></div>
+            </div>
+ 
+        </div>
+    </div>
+ 
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+ 
+    <script src="panel_medico.js"></script>
+</body>
+</html>
+ 
