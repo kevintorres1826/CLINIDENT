@@ -1,136 +1,156 @@
+
+raw
+Index · HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLINIDENT - Sistema Dental</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLINIDENT – Facturación</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-
-<div class="container">
-
-  <div class="header">
-    <img src="clinident_logo.png">
-    <h1>CLINIDENT - Sistema Dental</h1>
-    <img src="mascota.png">
+ 
+<!-- ══════════════ NAVBAR ══════════════ -->
+<nav class="navbar">
+  <div class="logo">CLINI<span>DENT</span></div>
+  <div class="nav-right">
+    <span class="nav-label">💳 Facturación y Pagos</span>
+    <button class="btn-back" onclick="window.history.back()">← Volver al Panel</button>
   </div>
-
-  <!-- SECCIÓN DATOS DEL PACIENTE -->
-  <div class="section">
-
-    <h2>Datos del Paciente</h2>
-
-    <div class="grid">
-      <div>
-        <label>Seleccionar Paciente</label>
-        <select id="selectPaciente" onchange="seleccionarPaciente()">
-          <option value="">Seleccione</option>
-        </select>
-      </div>
-      <div>
-        <label>Nombre</label>
-        <input id="nombre">
-      </div>
-      <div>
-        <label>Documento</label>
-        <input id="documento">
-      </div>
-      <div>
-        <label>Odontólogo</label>
-        <select id="doctor" onchange="actualizarTratamientos()">
-          <option>Dra. Paula Ríos - Ortodoncia</option>
-          <option>Dr. Carlos Méndez - Endodoncia</option>
-          <option>Dra. Laura Sánchez - Odontología General</option>
-        </select>
+</nav>
+ 
+<!-- ══════════════ LAYOUT PRINCIPAL ══════════════ -->
+<div class="page-layout">
+ 
+  <!-- ── COLUMNA IZQUIERDA: lista de citas ── -->
+  <aside class="sidebar-citas">
+    <div class="sidebar-header">
+      <h2>📅 Citas agendadas</h2>
+      <p class="sidebar-sub">Selecciona una cita para facturar</p>
+      <div class="search-box">
+        <input type="text" id="buscador" placeholder="Buscar paciente u odontólogo…" oninput="filtrarCitas()">
       </div>
     </div>
-
-    <button class="btn-gray"    onclick="crearPaciente()">Nuevo Paciente</button>
-    <button class="btn-danger"  onclick="eliminarPaciente()">Eliminar Paciente</button>
-    <button class="btn-gray"    onclick="historialPaciente()">Historial del Paciente</button>
-    <button class="btn-primary" onclick="crearConsulta()">Crear Consulta</button>
-    <button class="btn-danger"  onclick="nuevaConsulta()">Nueva Consulta</button>
-    <button class="btn-warning" onclick="verInasistencias()">⚠ Inasistencias</button>
-    <button id="btnGuardarInasistencia" onclick="guardarInasistenciaDirecta()" class="btn-danger" style="display:none;">
-  ⚠ Guardar Inasistencia
-</button>
-
-    <div class="alert" id="consultaOK">✔ Consulta Activa</div>
-
-    <!-- BLOQUE ASISTENCIA (visible solo cuando hay consulta activa) -->
-    <div id="bloqueAsistencia" style="display:none; margin-top:18px;">
-      <label>¿El paciente asistió a la cita?</label>
-      <div class="asistencia-opciones">
-        <button class="btn-asistencia activo" id="btnSi" onclick="setAsistencia(true)">✔ Sí asistió</button>
-        <button class="btn-asistencia"        id="btnNo" onclick="setAsistencia(false)">✗ No asistió</button>
-      </div>
-      <div id="motivoInasistenciaBox" style="display:none; margin-top:10px;">
-        <label>Motivo de inasistencia</label>
-        <input id="motivoInasistencia" placeholder="Ej: No avisó, emergencia, reprogramó...">
+ 
+    <div id="lista-citas" class="lista-citas">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando citas…</p>
       </div>
     </div>
-
-    <label style="margin-top:15px;">Diagnóstico</label>
-    <textarea id="diagnostico" rows="3"></textarea>
-
-  </div>
-
-  <!-- SECCIÓN TRATAMIENTOS -->
-  <div class="section">
-    <h2>Tratamientos</h2>
-
-    <select id="listaTratamientos"></select>
-    <button class="btn-primary" onclick="agregarTratamiento()">Agregar</button>
-
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Tratamiento</th>
-          <th>Precio</th>
-          <th>Cant</th>
-          <th>Subtotal</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tabla"></tbody>
-    </table>
-
-    <div class="total-box">
-      <label>Descuento (%)</label>
-      <input type="number" id="descuento" value="0" min="0" max="100" oninput="calcularTotal()">
-      <label>Impuesto (%)</label>
-      <input type="number" id="impuesto" value="0" min="0" max="100" oninput="calcularTotal()">
-      <p>Subtotal: <strong id="subtotal">$0.00</strong></p>
-      <p class="total-big">TOTAL: $<span id="total">0.00</span></p>
+  </aside>
+ 
+  <!-- ── COLUMNA DERECHA: formulario de factura ── -->
+  <main class="main-factura">
+ 
+    <!-- Estado vacío -->
+    <div id="estado-vacio" class="empty-state">
+      <div class="empty-icon">🦷</div>
+      <h3>Ninguna cita seleccionada</h3>
+      <p>Elige una cita de la lista para generar su factura.</p>
     </div>
-  </div>
-
-  <!-- SECCIÓN FACTURA Y PAGO -->
-  <div class="section">
-    <h2>Factura y Pago</h2>
-    <button class="btn-success" onclick="emitirFactura()">Confirmar y registrar pago</button>
-    <button class="btn-gray"    onclick="verPagos()">Ver Pagos</button>
-  </div>
-
-  <!-- MODAL FACTURA -->
-  <div class="modal-bg" id="modalFactura">
-    <div class="modal" id="contenidoFactura"></div>
-  </div>
-
-  <!-- MODAL PAGOS -->
-  <div class="modal-bg" id="modalPagos">
-    <div class="modal" id="contenidoPagos"></div>
-  </div>
-
-  <!-- MODAL INASISTENCIAS -->
-  <div class="modal-bg" id="modalInasistencias">
-    <div class="modal" id="contenidoInasistencias"></div>
-  </div>
-
+ 
+    <!-- Formulario (oculto hasta elegir cita) -->
+    <div id="form-factura" class="form-factura oculto">
+ 
+      <!-- Resumen de la cita elegida -->
+      <div class="cita-resumen" id="cita-resumen"></div>
+ 
+      <div class="form-card">
+        <h3>📋 Detalles del tratamiento</h3>
+ 
+        <div class="field-group">
+          <label for="tipo-tratamiento">Tipo de tratamiento</label>
+          <select id="tipo-tratamiento" onchange="actualizarPrecioReferencia()">
+            <option value="">Cargando…</option>
+          </select>
+        </div>
+ 
+        <div class="field-group">
+          <label for="diagnostico">Diagnóstico / Observaciones</label>
+          <textarea id="diagnostico" rows="3" placeholder="Describe el procedimiento realizado…"></textarea>
+        </div>
+ 
+        <div class="row-3">
+          <div class="field-group">
+            <label for="valor">Valor (COP $)</label>
+            <input type="number" id="valor" min="0" placeholder="0" oninput="calcularTotal()">
+            <span class="hint" id="precio-ref"></span>
+          </div>
+          <div class="field-group">
+            <label for="descuento">Descuento (%)</label>
+            <input type="number" id="descuento" value="0" min="0" max="100" oninput="calcularTotal()">
+          </div>
+          <div class="field-group">
+            <label for="impuesto">Impuesto (%)</label>
+            <input type="number" id="impuesto" value="0" min="0" max="100" oninput="calcularTotal()">
+          </div>
+        </div>
+ 
+        <div class="total-preview">
+          <span>Subtotal</span>
+          <strong id="prev-subtotal">$0</strong>
+          <span>Descuento</span>
+          <strong id="prev-descuento" class="neg">-$0</strong>
+          <span>Impuesto</span>
+          <strong id="prev-impuesto">+$0</strong>
+          <span class="total-label">TOTAL A PAGAR</span>
+          <strong class="total-valor" id="prev-total">$0</strong>
+        </div>
+      </div>
+ 
+      <div class="form-card">
+        <h3>💳 Método de pago</h3>
+        <div class="metodos-pago">
+          <label class="metodo-card activo" data-id="1">
+            <input type="radio" name="metodo" value="1" checked>
+            <span class="metodo-icon">💳</span>
+            <span>Tarjeta</span>
+          </label>
+          <label class="metodo-card" data-id="2">
+            <input type="radio" name="metodo" value="2">
+            <span class="metodo-icon">🏦</span>
+            <span>Transferencia</span>
+          </label>
+          <label class="metodo-card" data-id="3">
+            <input type="radio" name="metodo" value="3">
+            <span class="metodo-icon">💵</span>
+            <span>Efectivo</span>
+          </label>
+        </div>
+      </div>
+ 
+      <button class="btn-emitir" onclick="emitirFactura()">
+        ✅ Confirmar y emitir factura
+      </button>
+ 
+    </div>
+  </main>
 </div>
-
+ 
+<!-- ══════════════ MODAL FACTURA EMITIDA ══════════════ -->
+<div class="modal-bg" id="modal-factura">
+  <div class="modal-box">
+    <div id="contenido-factura"></div>
+    <div class="modal-actions">
+      <button class="btn-print" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ══════════════ MODAL HISTORIAL PAGOS ══════════════ -->
+<div class="modal-bg" id="modal-pagos">
+  <div class="modal-box">
+    <div id="contenido-pagos"></div>
+    <button class="btn-cerrar" onclick="document.getElementById('modal-pagos').style.display='none'">Cerrar</button>
+  </div>
+</div>
+ 
+<button class="fab-pagos" onclick="verPagos()" title="Ver historial de pagos">📂 Historial</button>
+ 
 <script src="script.js"></script>
 </body>
 </html>

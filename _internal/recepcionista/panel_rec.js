@@ -142,3 +142,7 @@ function procesarCita(e) {
         alert("❌ Error de comunicación con el servidor.");
     });
 }
+
+function toggleVistaPaciente() {
+    window.location.href = '../agenda_cliente/index.html';
+}

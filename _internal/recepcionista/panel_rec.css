@@ -144,3 +144,17 @@ body {
 
 .btn-submit { width: 100%; background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(14,165,233,0.2); }
 .btn-submit:hover { background: #0284c7; }
+
+
+.btn-switch-mode {
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: opacity 0.2s;
+}
+.btn-switch-mode:hover { opacity: 0.85; }

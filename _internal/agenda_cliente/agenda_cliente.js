@@ -32,22 +32,27 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(res => res.json())
         .then(user => {
             if (user.status === "success") {
-                
                 ID_USUARIO_LOGUEADO = user.id;
                 
                 document.getElementById("nav-user-display").innerText = user.nombre;
                 document.getElementById("nombre-usuario-bienvenida").innerText = user.nombre;
                 
-                // 🔐 SEGURIDAD: Si el id_rol es 2 (Odontólogo), mostramos el botón de cambio
-                if (user.id_rol === 2) {
-                    const btnMedico = document.getElementById("btn-switch-medico");
-                    if (btnMedico) {
-                        btnMedico.style.display = "inline-block";
+                // --- INICIO DE LÓGICA DE BOTÓN INTELIGENTE ---
+                const btnVolver = document.getElementById("btn-volver-mi-panel");
+                if (btnVolver) {
+                    if (user.id_rol === 3) { // Recepcionista
+                        btnVolver.style.display = "inline-block";
+                        btnVolver.innerText = "📋 Volver a Recepción";
+                        btnVolver.onclick = () => window.location.href = '../recepcionista/panel_rec.html';
+                    } else if (user.id_rol === 1 || user.id_rol === 2) { // Admin u Odontólogo
+                        btnVolver.style.display = "inline-block";
+                        btnVolver.innerText = "🩺 Volver a Panel Médico";
+                        btnVolver.onclick = () => window.location.href = '../odontologo/panel_medico.html';
                     }
                 }
-    
+                // --- FIN DE LÓGICA DE BOTÓN INTELIGENTE ---
+
                 cargarOdontologos();
-    
             }
         })
         .catch(err => console.error("Error al obtener sesión:", err));
