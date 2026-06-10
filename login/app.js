@@ -1,307 +1,346 @@
+
 // ==========================================
-// ── 1. MOTOR DE CAMBIO DE PANTALLAS ──
+// ── VARIABLES GLOBALES ──
 // ==========================================
-function go(screenId) {
-    document.querySelectorAll('.forms-panel .screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(screenId);
-    if (target) target.classList.add('active');
-}
-
-// Alternar entre el flujo de Login y Registro desde el Panel Fijo
-let modoActual = "login"; 
-
-function alternarFormularios() {
-    const title = document.getElementById('welcome-title');
-    const text = document.getElementById('welcome-text');
-    const label = document.getElementById('toggle-label');
-    const button = document.getElementById('btn-switch');
-
-    if (modoActual === "login") {
-        modoActual = "registro";
-        title.innerText = "¡Únete a Clinident!";
-        text.innerText = "Regístrate hoy mismo para agendar tus citas en línea de forma ágil y segura.";
-        label.innerText = "¿Ya tienes una cuenta?";
-        button.innerText = "Iniciar Sesión";
-        
-        // Limpieza preventiva de jQuery
-        $('#step-2').hide();
-        $('#step-1').show(); 
-        $('#btn-envio').show();
-        $('#loader').hide();
-        
-        go('step-1'); 
+let mode = 'login';
+let recovMet = 'correo';
+let recovContact = '';
+ 
+// ==========================================
+// ── SPLASH SCREEN ──
+// ==========================================
+(function splash() {
+  const bar = document.getElementById('sbar');
+  const lbl = document.getElementById('slabel');
+  const msgs = ['Cargando sistema...', 'Conectando servidor...', 'Preparando portal...', '¡Listo!'];
+  let pct = 0, step = 0;
+ 
+  const iv = setInterval(() => {
+    pct += Math.random() * 18 + 5;
+    if (pct >= 100) {
+      pct = 100;
+      clearInterval(iv);
+      setTimeout(() => {
+        document.getElementById('splash').classList.add('hide');
+      }, 500);
+    }
+    bar.style.width = Math.min(pct, 100) + '%';
+    const si = Math.floor((pct / 100) * msgs.length);
+    if (si < msgs.length && si !== step) {
+      step = si;
+      lbl.textContent = msgs[si];
+    }
+  }, 220);
+})();
+ 
+// ==========================================
+// ── INDICADOR DE COINCIDENCIA DE CONTRASEÑAS ──
+// ==========================================
+// Se llama en tiempo real mientras el usuario escribe en cualquiera de los dos campos
+document.addEventListener('DOMContentLoaded', () => {
+  const p1 = document.getElementById('r-pass');
+  const p2 = document.getElementById('r-pass2');
+  const hint = document.getElementById('pass-hint');
+ 
+  function checkMatch() {
+    if (!p2.value) { hint.textContent = ''; hint.className = 'pass-hint'; return; }
+    if (p1.value === p2.value) {
+      hint.textContent = '✔ Las contraseñas coinciden';
+      hint.className = 'pass-hint match';
     } else {
-        modoActual = "login";
-        title.innerText = "¡Bienvenido de nuevo!";
-        text.innerText = "Accede a tu panel clínico para gestionar tus citas, tratamientos e historial médico premium.";
-        label.innerText = "¿No tienes una cuenta?";
-        button.innerText = "Registrarse aquí";
-        go('screen-login'); 
+      hint.textContent = '✖ Las contraseñas no coinciden';
+      hint.className = 'pass-hint nomatch';
     }
-}
-
-// ==========================================
-// ── 2. MÓDULO LOGIN & RECUPERACIÓN (Python) ──
-// ==========================================
-let contactoRecuperacion = '';
-let metodoVerif = 'correo'; // 👈 Declarada una única vez aquí de manera global
-
-function handleLogin() {
-    const user = document.getElementById('login-user').value.trim();
-    const pass = document.getElementById('login-pass').value;
-
-    if (!user || !pass) {
-        alert('⚠️ Por favor escribe tu correo y contraseña.');
-        return;
-    }
-
-    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
-
-    fetch(`${urlBase}/login/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario: user, contrasena: pass })  // ← directo, sin FormData
-    })
-    .then(response => response.json())
-    .then(data => {
-    if (data.status === 'success') {
-        window.location.href = data.redirect; // ← usa directo el redirect del servidor
-    } else {
-        alert('⚠️ ' + (data.message || data.msg || 'Credenciales incorrectas.'));
-    }
-})
-    .catch(error => {
-        console.error("Error en la petición:", error);
-        alert("❌ No se pudo conectar con el servidor.");
-    });
-}
-
-function seleccionarMetodo(tipo) {
-    metodoVerif = tipo;
-    const titulo = document.getElementById('titulo-dato');
-    const sub = document.getElementById('sub-dato');
-    const label = document.getElementById('label-dinamico');
-    const input = document.getElementById('input-recuperacion');
-
-    if (tipo === 'correo') {
-        titulo.innerText = "Recuperar por Correo";
-        sub.innerText = "Enviaremos un código a tu dirección electrónica registrada.";
-        label.innerText = "Correo Electrónico";
-        input.placeholder = "ejemplo@correo.com";
-        input.type = "email";
-    } else {
-        titulo.innerText = "Recuperar por Celular";
-        sub.innerText = "Enviaremos un código SMS a tu número telefónico registrado.";
-        label.innerText = "Número de Teléfono";
-        input.placeholder = "3001234567";
-        input.type = "text";
-    }
-    input.value = "";
-    go('screen-ingresar-dato');
-}
-
-function enviarCodigoVerificacion() {
-    const valorInput = document.getElementById('input-recuperacion').value.trim();
-    if (!valorInput) {
-        alert("⚠️ Por favor ingresa el dato solicitado.");
-        return;
-    }
-    contactoRecuperacion = valorInput;
-
-    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
-
-    const datos = new FormData();
-    datos.append('accion', 'enviar_codigo');
-    datos.append('metodo', metodoVerif);
-    datos.append('valor', contactoRecuperacion);
-
-    fetch(`${urlBase}/login/recuperacion`, { 
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(Object.fromEntries(datos))
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert("📩 Código enviado. Por seguridad, el código de validación es: 123456");
-            document.getElementById('verif-subtitle').innerText = `Ingresa el código enviado a tu ${metodoVerif === 'correo' ? 'correo' : 'teléfono'}`;
-            document.getElementById('codigo').value = "";
-            go('screen-verificacion');
-        } else {
-            alert("❌ " + (data.message || data.msg));
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Error al conectar con el servicio de recuperación.");
-    });
-}
-
-function verificarCodigo() {
-    const cod = document.getElementById('codigo').value.trim();
-    if (cod === "123456") {
-        document.getElementById('error-verif').style.display = "none";
-        document.getElementById('p1').value = "";
-        document.getElementById('p2').value = "";
-        go('screen-nueva-pass');
-    } else {
-        document.getElementById('error-verif').style.display = "block";
-    }
-}
-
-function guardarNuevaPassword() {
-    const p1 = document.getElementById('p1').value;
-    const p2 = document.getElementById('p2').value;
-    const errorMsg = document.getElementById('error-pass');
-
-    if (!p1 || !p2) {
-        alert("⚠️ Por favor completa ambos campos de contraseña.");
-        return;
-    }
-
-    if (p1 !== p2) {
-        errorMsg.style.display = "block";
-        setTimeout(() => { errorMsg.style.display = "none"; }, 3000);
-        return;
-    }
-
-    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
-
-    const datos = new FormData();
-    datos.append('accion', 'actualizar_password');
-    datos.append('metodo', metodoVerif);
-    datos.append('valor', contactoRecuperacion);
-    datos.append('password', p1);
-
-    fetch(`${urlBase}/login/recuperacion`, { 
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(Object.fromEntries(datos))
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert("✅ ¡Tu contraseña ha sido actualizada con éxito en el sistema!");
-            go('screen-login');
-        } else {
-            alert("❌ Hubo un error: " + (data.message || data.msg));
-        }
-    })
-    .catch(err => console.error(err));
-}
-
-// ==========================================
-// ── 3. MÓDULO LOGIC REGISTRO (jQuery) ──
-// ==========================================
-$(document).ready(function() {
-    // Visibilidad de contraseñas
-    $(document).on('click', '.toggle-password', function() {
-        const input = $('#pass');
-        if (input.attr('type') === "password") {
-            input.attr('type', 'text');
-            $(this).removeClass('fa-eye').addClass('fa-eye-slash');
-        } else {
-            input.attr('type', 'password');
-            $(this).removeClass('fa-eye-slash').addClass('fa-eye');
-        }
-    });
-
-    window.abrirModal = function() { $('#modalLegal').css('display', 'flex'); };
-    window.cerrarModal = function() { $('#modalLegal').hide(); };
-    
-    window.validarBoton = function() {
-        const estaChequeado = $('#acepto-datos').is(':checked');
-        $('#btn-envio').prop('disabled', !estaChequeado);
-    };
-
-    window.simularEnvio = function() {
-        const nom   = $('#nom').val().trim();
-        const ape   = $('#ape').val().trim();
-        const email = $('#email').val().trim();
-        const tel   = $('#tel').val().trim();
-        const pass  = $('#pass').val();
-
-        if (!nom || !ape || !email || !pass) {
-            alert("⚠️ Por favor rellena todos los campos obligatorios.");
-            return;
-        }
-
-        $('#btn-envio').hide();
-        $('#loader').show();
-
-        const datosRegistro = {
-            nombre: nom,
-            apellido: ape,
-            email: email,
-            telefono: tel,
-            password: pass
-        };
-
-        const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : "http://127.0.0.1:5000";
-
-        fetch(`${urlBase}/Registro/registro`, { 
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(datosRegistro)
-        })
-        .then(res => res.json())
-        .then(respuesta => {
-            $('#loader').hide();
-            if (respuesta.status === 'success') {
-                $('#step-1').hide();
-                $('#step-2').show();
-                go('step-2'); 
-                $('#input-codigo').focus();
-            } else {
-                alert("⚠️ Error: " + (respuesta.message || respuesta.msg));
-                $('#btn-envio').show();
-            }
-        })
-        .catch(function() {
-            $('#loader').hide();
-            $('#btn-envio').show();
-            alert("Error al enviar los datos. Por favor, inténtalo de nuevo.");
-        });
-    };
-
-    window.finalizarRegistro = function() {
-        const codigoInput = $('#input-codigo').val().toUpperCase().trim();
-        const nom = $('#nom').val().trim(); 
-        
-        if (codigoInput === "SENA4") {
-            alert('🎉 ¡Tu cuenta ha sido creada exitosamente! Bienvenido a Clinident.');
-            
-            if (nom) {
-                localStorage.setItem('clinident_usuario_nombre', nom);
-            }
-            
-            // Limpieza de campos post-registro
-            $('#nom').val('');
-            $('#ape').val('');
-            $('#email').val('');
-            $('#tel').val('');
-            $('#pass').val('');
-            $('#input-codigo').val('');
-            $('#acepto-datos').prop('checked', false);
-            
-            $('#step-2').hide();
-            $('#step-1').show();
-            $('#btn-envio').prop('disabled', true).show(); 
-            
-            window.location.href = '../agenda_cliente/index.html';
-            
-        } else {
-            alert('❌ Código incorrecto (El código en esta versión de prueba es: SENA4)');
-        }
-    };
+  }
+ 
+  p1.addEventListener('input', checkMatch);
+  p2.addEventListener('input', checkMatch);
 });
+ 
+// ==========================================
+// ── TRANSICIÓN LOGIN ↔ REGISTRO ──
+// ==========================================
+function toggleMode() {
+  const sh2 = document.getElementById('sh2');
+  const sp = document.getElementById('sp');
+  const hint = document.getElementById('sw-hint');
+  const btn = document.getElementById('btn-sw');
+  const slider = document.getElementById('slider');
+ 
+  if (mode === 'login') {
+    mode = 'reg';
+    sh2.textContent = '¡Únete a Clinident!';
+    sp.textContent = 'Regístrate para gestionar tus citas de forma ágil y segura.';
+    hint.textContent = '¿Ya tienes una cuenta?';
+    btn.textContent = 'Iniciar sesión';
+    slider.classList.add('to-reg');
+  } else {
+    mode = 'login';
+    sh2.textContent = '¡Bienvenido de nuevo!';
+    sp.textContent = 'Accede a tu historial, citas y tratamientos desde un solo lugar.';
+    hint.textContent = '¿No tienes cuenta?';
+    btn.textContent = 'Registrarse aquí';
+    slider.classList.remove('to-reg');
+  }
+}
+ 
+// ==========================================
+// ── TABS: LOGIN / RECUPERACIÓN ──
+// ==========================================
+function showLoginTab(t) {
+  const vl = document.getElementById('v-login');
+  const vr = document.getElementById('v-recov');
+  const tl = document.getElementById('tab-login');
+  const tr = document.getElementById('tab-recov');
+  const bar = document.getElementById('tab-bar');
+ 
+  if (t === 'login') {
+    vl.style.display = '';
+    vr.style.display = 'none';
+    tl.classList.add('active');
+    tr.classList.remove('active');
+    bar.style.left = '0%';
+  } else {
+    vl.style.display = 'none';
+    vr.style.display = '';
+    tl.classList.remove('active');
+    tr.classList.add('active');
+    bar.style.left = '50%';
+  }
+}
+ 
+// ==========================================
+// ── OJO CONTRASEÑA ──
+// ==========================================
+function eye(id, btn) {
+  const inp = document.getElementById(id);
+  const ico = btn.querySelector('i');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.className = 'ti ti-eye-off';
+  } else {
+    inp.type = 'password';
+    ico.className = 'ti ti-eye';
+  }
+}
+ 
+// ==========================================
+// ── LOGIN ──
+// ==========================================
+function doLogin() {
+  const u = document.getElementById('l-user').value.trim();
+  const p = document.getElementById('l-pass').value;
+ 
+  if (!u || !p) {
+    alert('⚠ Escribe tu correo y contraseña.');
+    return;
+  }
+ 
+  const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
+ 
+  fetch(`${urlBase}/login/login`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario: u, contrasena: p })
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'success') window.location.href = d.redirect;
+      else alert('⚠ ' + (d.message || d.msg || 'Credenciales incorrectas.'));
+    })
+    .catch(() => alert('❌ No se pudo conectar con el servidor.'));
+}
+ 
+// ==========================================
+// ── RECUPERACIÓN ──
+// ==========================================
+function selRecov(m) {
+  recovMet = m;
+  document.getElementById('rv-opts').style.display = 'none';
+  document.getElementById('rv-dato').style.display = '';
+ 
+  const isEmail = m === 'correo';
+  document.getElementById('rv-title').textContent = isEmail ? 'Recuperar por correo' : 'Recuperar por celular';
+  document.getElementById('rv-sub').textContent = isEmail ? 'Escribe tu correo registrado' : 'Escribe tu número registrado';
+  document.getElementById('rv-lbl').textContent = isEmail ? 'Correo' : 'Celular';
+ 
+  const inp = document.getElementById('rv-inp');
+  inp.type = isEmail ? 'email' : 'text';
+  inp.placeholder = isEmail ? 'ejemplo@correo.com' : '3001234567';
+  inp.value = '';
+ 
+  document.getElementById('rv-ico').className = (isEmail ? 'ti ti-mail' : 'ti ti-device-mobile') + ' ico';
+}
+ 
+function sendRecov() {
+  const val = document.getElementById('rv-inp').value.trim();
+  if (!val) { alert('⚠ Ingresa el dato solicitado.'); return; }
+  recovContact = val;
+ 
+  const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
+ 
+  fetch(`${urlBase}/login/recuperacion`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accion: 'enviar_codigo', metodo: recovMet, valor: val })
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'success') {
+        alert('📩 Código enviado. (Demo: el código es 123456)');
+        document.getElementById('rv-vsub').textContent = `Código enviado a tu ${recovMet === 'correo' ? 'correo' : 'celular'}`;
+        document.getElementById('rv-dato').style.display = 'none';
+        document.getElementById('rv-code').value = '';
+        document.getElementById('rv-err').style.display = 'none';
+        document.getElementById('rv-verif').style.display = '';
+      } else {
+        alert('❌ ' + (d.message || d.msg));
+      }
+    })
+    .catch(() => alert('❌ No se pudo conectar con el servidor.'));
+}
+ 
+function verifyRecov() {
+  const cod = document.getElementById('rv-code').value.trim();
+  const err = document.getElementById('rv-err');
+ 
+  if (cod === '123456') {
+    err.style.display = 'none';
+    document.getElementById('rv-verif').style.display = 'none';
+    document.getElementById('rv-newpass').style.display = '';
+    document.getElementById('np1').value = '';
+    document.getElementById('np2').value = '';
+  } else {
+    err.style.display = 'block';
+  }
+}
+ 
+function saveNewPass() {
+  const p1 = document.getElementById('np1').value;
+  const p2 = document.getElementById('np2').value;
+  const err = document.getElementById('np-err');
+ 
+  if (!p1 || !p2) { alert('⚠ Completa ambos campos.'); return; }
+  if (p1 !== p2) {
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 3000);
+    return;
+  }
+  err.style.display = 'none';
+ 
+  const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
+ 
+  fetch(`${urlBase}/login/recuperacion`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accion: 'actualizar_password', metodo: recovMet, valor: recovContact, password: p1 })
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'success') {
+        alert('✅ ¡Contraseña actualizada con éxito!');
+        document.getElementById('rv-newpass').style.display = 'none';
+        document.getElementById('rv-opts').style.display = '';
+        showLoginTab('login');
+      } else {
+        alert('❌ Error: ' + (d.message || d.msg));
+      }
+    })
+    .catch(() => {});
+}
+ 
+// ==========================================
+// ── REGISTRO ──
+// ==========================================
+function doReg() {
+  const nom  = document.getElementById('r-nom').value.trim();
+  const ape  = document.getElementById('r-ape').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const tel  = document.getElementById('r-tel').value.trim();
+  const pass = document.getElementById('r-pass').value;
+  const pass2 = document.getElementById('r-pass2').value;
+ 
+  // Validaciones en cliente (el backend también las repite por seguridad)
+  if (!nom || !ape || !email || !pass) {
+    alert('⚠ Por favor rellena todos los campos obligatorios.');
+    return;
+  }
+ 
+  if (pass !== pass2) {
+    alert('⚠ Las contraseñas no coinciden. Verifícalas antes de continuar.');
+    document.getElementById('r-pass2').focus();
+    return;
+  }
+ 
+  if (pass.length < 6) {
+    alert('⚠ La contraseña debe tener al menos 6 caracteres.');
+    document.getElementById('r-pass').focus();
+    return;
+  }
+ 
+  document.getElementById('btn-reg').style.display = 'none';
+  document.getElementById('reg-loader').style.display = 'flex';
+ 
+  const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
+ 
+  fetch(`${urlBase}/Registro/registro`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    // Se envía "confirmar" para que el backend lo valide también
+    body: JSON.stringify({ nombre: nom, apellido: ape, email, telefono: tel, password: pass, confirmar: pass2 })
+  })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('reg-loader').style.display = 'none';
+      if (d.status === 'success') {
+        document.getElementById('r-code').value = '';
+        document.getElementById('reg-slider').classList.add('to-step2');
+      } else {
+        alert('⚠ ' + (d.message || d.msg));
+        document.getElementById('btn-reg').style.display = 'flex';
+      }
+    })
+    .catch(() => {
+      document.getElementById('reg-loader').style.display = 'none';
+      document.getElementById('btn-reg').style.display = 'flex';
+      alert('❌ Error al enviar los datos.');
+    });
+}
+ 
+function finishReg() {
+  const cod = document.getElementById('r-code').value.toUpperCase().trim();
+  const nom = document.getElementById('r-nom').value.trim();
+ 
+  if (cod === 'SENA4') {
+    alert('🎉 ¡Cuenta creada exitosamente! Bienvenido a Clinident.');
+    if (nom) localStorage.setItem('clinident_usuario_nombre', nom);
+ 
+    ['r-nom', 'r-ape', 'r-email', 'r-tel', 'r-pass', 'r-pass2', 'r-code'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('pass-hint').textContent = '';
+    document.getElementById('r-ok').checked = false;
+    document.getElementById('btn-reg').disabled = true;
+    document.getElementById('btn-reg').style.display = 'flex';
+    document.getElementById('reg-slider').classList.remove('to-step2');
+ 
+    window.location.href = '../agenda_cliente/index.html';
+  } else {
+    alert('❌ Código incorrecto. (Demo: SENA4)');
+  }
+}
+ 
+// ==========================================
+// ── MODAL PRIVACIDAD ──
+// ==========================================
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+}
+ 
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}

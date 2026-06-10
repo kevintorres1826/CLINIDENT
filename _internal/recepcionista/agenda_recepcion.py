@@ -22,7 +22,6 @@ def _migrar():
     except Exception:
         pass  # Ya existe
  
-    # Rellenar citas antiguas con NULL usando lógica de sala
     conn.execute("""
         UPDATE tblcita SET tratamiento = CASE
             WHEN id_sala = 4 THEN 'Cirugía Oral'
@@ -63,12 +62,13 @@ def agendar_cita_recepcionista():
  
     data = request.get_json()
     id_usuario_existente = data.get('id_usuario_existente')
-    nombre        = data.get('nombre', '').strip()
-    apellido      = data.get('apellido', '').strip()
+    nombre        = data.get('nombre',    '').strip()
+    apellido      = data.get('apellido',  '').strip()
+    telefono      = data.get('telefono',  '').strip()   # ← NUEVO
     id_odontologo = data.get('id_odontologo')
     fecha         = data.get('fecha')
     hora          = data.get('hora')
-    tratamiento   = data.get('tratamiento', '').strip() or None   # ← persiste
+    tratamiento   = data.get('tratamiento', '').strip() or None
  
     if not all([id_odontologo, fecha, hora]):
         return jsonify({"status": "error", "message": "Faltan campos obligatorios."}), 400
@@ -84,15 +84,34 @@ def agendar_cita_recepcionista():
         if not id_usuario_existente:
             if not nombre or not apellido:
                 return jsonify({"status": "error", "message": "Nombre y apellido son obligatorios para un paciente nuevo."}), 400
+ 
+            # ── Teléfono único: verificar que no exista en otro usuario ────────
+            if telefono:
+                cursor.execute(
+                    "SELECT id_usuario FROM tblusuario WHERE telefono = ?",
+                    [telefono]
+                )
+                if cursor.fetchone():
+                    return jsonify({
+                        "status": "error",
+                        "message": "⚠️ El número de teléfono ya está registrado. Busca al paciente en la lista."
+                    })
+ 
+            # Correo temporal único para alta física (sin cuenta web aún)
             correo_temp = f"{nombre.lower()}.{apellido.lower()}@clinident.temp"
+ 
             cursor.execute(
-                "INSERT INTO tblusuario (nombre, apellido, correo, contrasena, id_rol, estado) VALUES (?, ?, ?, ?, 4, 'Activo')",
-                (nombre, apellido, correo_temp, "clinident123")
+                """
+                INSERT INTO tblusuario (nombre, apellido, correo, telefono, contrasena, id_rol, estado)
+                VALUES (?, ?, ?, ?, '', 4, 'Activo')
+                """,
+                (nombre, apellido, correo_temp, telefono or None)
             )
             id_usuario_paciente = cursor.lastrowid
         else:
             id_usuario_paciente = id_usuario_existente
  
+        # Verificar conflicto de horario
         check_sql = """
             SELECT COUNT(*) FROM tblcita
             WHERE fecha = ? AND id_odontologo = ?
@@ -100,12 +119,11 @@ def agendar_cita_recepcionista():
         """
         cursor.execute(check_sql, [fecha, id_odontologo,
                                    hora_inicio, hora_inicio,
-                                   hora_fin, hora_fin,
+                                   hora_fin,    hora_fin,
                                    hora_inicio, hora_fin])
         if cursor.fetchone()[0] > 0:
             return jsonify({"status": "error", "message": "El especialista ya tiene una cita en ese horario."})
  
-        # ← INSERT incluye tratamiento
         cursor.execute(
             "INSERT INTO tblcita (fecha, hora_inicio, hora_fin, id_usuario, id_odontologo, id_sala, tratamiento) VALUES (?, ?, ?, ?, ?, 1, ?)",
             (fecha, hora_inicio, hora_fin, id_usuario_paciente, id_odontologo, tratamiento)
@@ -115,6 +133,7 @@ def agendar_cita_recepcionista():
  
         conexion.commit()
         return jsonify({"status": "success", "message": "¡Cita registrada correctamente!"})
+ 
     except Exception as e:
         conexion.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="panel_rec.css">
 </head>
 <body>
-
+ 
     <nav class="navbar">
         <div class="logo-container">CLINI<span class="accent-text">DENT</span></div>
         <div class="nav-actions">
@@ -18,13 +18,13 @@
             <button class="btn-logout-header" id="btn-logout" onclick="cerrarSesionRecepcionista()" title="Cerrar Sesión General">🚪 Salir</button>
         </div>
     </nav>
-
+ 
     <div id="vista-panel" class="vista-activa">
         <div class="welcome-section">
             <h1>Panel de Recepción</h1>
             <p>Bienvenido, <b id="nombre-recepcionista">Cargando Personal...</b></p>
         </div>
-
+ 
         <div class="menu-recepcion-horizontal">
             <div class="card-opcion" onclick="cambiarVista('agenda')">
                 <span class="icon">📅</span>
@@ -43,7 +43,7 @@
             </div>
         </div>
     </div>
-
+ 
     <div id="vista-agenda" class="oculta form-wrapper-center">
         <div class="form-container">
             <h2>📅 Agendamiento de Citas</h2>
@@ -57,27 +57,36 @@
                         <option value="">Cargando pacientes...</option>
                     </select>
                 </div>
-
-                <div id="caja-nuevo-paciente" class="row-inputs oculta">
-                    <div class="form-group">
-                        <label for="nombre">Nombre</label>
-                        <input type="text" id="nombre" placeholder="Ej: Carlos">
+ 
+                <!-- Datos del paciente nuevo: nombre, apellido y teléfono -->
+                <div id="caja-nuevo-paciente" class="oculta">
+                    <div class="row-inputs">
+                        <div class="form-group">
+                            <label for="nombre">Nombre</label>
+                            <input type="text" id="nombre" placeholder="Ej: Carlos">
+                        </div>
+                        <div class="form-group">
+                            <label for="apellido">Apellido</label>
+                            <input type="text" id="apellido" placeholder="Ej: Mendoza">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="apellido">Apellido</label>
-                        <input type="text" id="apellido" placeholder="Ej: Mendoza">
+                        <label for="telefono">
+                            Teléfono <span style="color:#0ea5e9; font-size:0.8rem;">(permite vincular cuenta web futura)</span>
+                        </label>
+                        <input type="text" id="telefono" placeholder="Ej: 3001234567" maxlength="15">
                     </div>
                 </div>
-
+ 
                 <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;">
-
+ 
                 <div class="form-group">
                     <label for="id_odontologo">Odontólogo / Especialista</label>
                     <select id="id_odontologo" required>
                         <option value="">Seleccione un especialista...</option>
                     </select>
                 </div>
-
+ 
                 <div class="form-group">
                     <label for="tratamiento">Tratamiento Clínico</label>
                     <select id="tratamiento" required>
@@ -89,7 +98,7 @@
                         <option value="Cirugía Oral">Cirugía Oral</option>
                     </select>
                 </div>
-
+ 
                 <div class="row-inputs">
                     <div class="form-group">
                         <label for="fecha">Fecha de Cita</label>
@@ -109,12 +118,12 @@
                         </select>
                     </div>
                 </div>
-
+ 
                 <button type="submit" class="btn-submit">Confirmar y Registrar Cita</button>
             </form>
         </div>
     </div>
-
+ 
     <script src="panel_rec.js"></script>
 </body>
 </html>
