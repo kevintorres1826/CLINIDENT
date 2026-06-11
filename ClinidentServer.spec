@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('login', 'login'), ('agenda_cliente', 'agenda_cliente'), ('odontologo', 'odontologo'), ('recepcionista', 'recepcionista'), ('facturacion', 'facturacion'), ('historial', 'historial')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

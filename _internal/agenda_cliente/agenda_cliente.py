@@ -18,17 +18,13 @@ agenda_blueprint = Blueprint('agenda_blueprint', __name__)
  
  
 def _migrar():
-    """Añade columna tratamiento a tblcita si no existe, y rellena citas existentes."""
     conn = sqlite3.connect(RUTA_BD)
-    # 1. Crear columna si no existe
     try:
         conn.execute("ALTER TABLE tblcita ADD COLUMN tratamiento VARCHAR(100) DEFAULT NULL")
         conn.commit()
         print("✅ Migración: columna 'tratamiento' agregada a tblcita")
     except Exception:
-        pass  # Ya existe
- 
-    # 2. Rellenar citas antiguas que quedaron NULL usando la misma lógica de sala/odontólogo
+        pass
     conn.execute("""
         UPDATE tblcita SET tratamiento = CASE
             WHEN id_sala = 4 THEN 'Cirugía Oral'
@@ -47,16 +43,32 @@ _migrar()
  
  
 def obtener_odontologos_disponibles():
+    """
+    Devuelve usuarios con rol 2 (odontólogo) usando tblusuario_rol si existe,
+    con fallback a id_rol legacy.
+    """
     conexion = sqlite3.connect(RUTA_BD)
     conexion.row_factory = sqlite3.Row
     cursor = conexion.cursor()
-    cursor.execute("SELECT id_usuario, nombre, apellido FROM tblusuario WHERE id_rol = 2 AND estado = 'Activo'")
+    cursor.execute("""
+        SELECT DISTINCT u.id_usuario, u.nombre, u.apellido
+        FROM tblusuario u
+        WHERE u.estado = 'Activo'
+          AND (
+              u.id_rol = 2
+              OR EXISTS (
+                  SELECT 1 FROM tblusuario_rol ur
+                  WHERE ur.id_usuario = u.id_usuario AND ur.id_rol = 2
+              )
+          )
+        ORDER BY u.nombre ASC
+    """)
     odontologos = cursor.fetchall()
     conexion.close()
     return [{"id": o['id_usuario'], "nombre": f"Dr. {o['nombre']} {o['apellido']}"} for o in odontologos]
  
 def obtener_sala_segun_tratamiento(tratamiento_name):
-    if tratamiento_name == "Cirugía Oral":   return 4
+    if tratamiento_name == "Cirugía Oral":    return 4
     if tratamiento_name == "Limpieza Dental": return 5
     if tratamiento_name == "Ortodoncia":      return 3
     return 2
@@ -92,11 +104,20 @@ def acciones_get():
     action                = request.args.get('action', '')
  
     if action == 'get_sesion_usuario':
+        # ── Devolver roles completos para que el JS sepa a qué panel volver ──
+        # session['roles'] lo guarda el login.py nuevo (lista de ints)
+        # Fallback: construir lista desde id_rol legacy
+        roles = session.get('roles', None)
+        if not roles:
+            id_rol_legacy = session.get('id_rol')
+            roles = [id_rol_legacy] if id_rol_legacy else []
+ 
         return jsonify({
             "status": "success",
             "id":     id_usuario_sesion,
             "nombre": nombre_usuario_sesion,
-            "id_rol": session.get('id_rol')
+            "id_rol": session.get('id_rol'),
+            "roles":  roles               # ← lista completa, el JS la usa para el botón volver
         })
  
     elif action == 'get_odontologos':
@@ -143,7 +164,6 @@ def acciones_get():
             conexion = sqlite3.connect(RUTA_BD)
             conexion.row_factory = sqlite3.Row
             cursor = conexion.cursor()
-            # ← Ahora lee tratamiento directamente de la BD
             cursor.execute("""
                 SELECT c.id_cita as id, c.fecha, c.hora_inicio as hora,
                        c.id_odontologo, c.id_sala,
@@ -157,7 +177,7 @@ def acciones_get():
  
             res = []
             for c in cursor.fetchall():
-                hora_obj = datetime.strptime(c['hora'], "%H:%M:%S")
+                hora_obj    = datetime.strptime(c['hora'], "%H:%M:%S")
                 nombre_trat = c['tratamiento']
                 res.append({
                     "id":               c['id'],
@@ -180,7 +200,6 @@ def acciones_get():
             conexion = sqlite3.connect(RUTA_BD)
             conexion.row_factory = sqlite3.Row
             cursor = conexion.cursor()
-            # ← Lee tratamiento de la BD
             cursor.execute("""
                 SELECT *, COALESCE(tratamiento, 'Revisión General') AS tratamiento
                 FROM tblcita WHERE id_cita = ?
@@ -250,7 +269,7 @@ def acciones_post():
             edit_id        = input_data.get('edit_id')
             fecha          = input_data.get('fecha', '')
             hora_raw       = input_data.get('hora', '')
-            tratamiento_js = input_data.get('tratamiento', 'Revisión General')  # ← se guarda
+            tratamiento_js = input_data.get('tratamiento', 'Revisión General')
  
             if not fecha or not hora_raw:
                 return jsonify({"status": "error", "message": "Fecha y hora requeridas."})
@@ -294,7 +313,6 @@ def acciones_post():
                                 "message": "El especialista o consultorio ya está reservado en este horario."})
  
             if edit_id and edit_id not in ["null", "undefined", ""]:
-                # ← UPDATE también actualiza tratamiento
                 cursor.execute("""
                     UPDATE tblcita
                     SET fecha = ?, hora_inicio = ?, hora_fin = ?,
@@ -303,14 +321,12 @@ def acciones_post():
                 """, [fecha, hora_inicio, hora_fin, id_odontologo, id_sala, tratamiento_js, edit_id])
                 cursor.execute("UPDATE tblagenda SET id_estado = 3 WHERE id_cita = ?", [edit_id])
             else:
-                # ← INSERT ahora incluye tratamiento
                 cursor.execute("""
                     INSERT INTO tblcita
                         (fecha, hora_inicio, hora_fin, id_usuario, id_odontologo, id_sala, tratamiento)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, [fecha, hora_inicio, hora_fin, id_usuario_sesion,
                       id_odontologo, id_sala, tratamiento_js])
- 
                 nuevo_id = cursor.lastrowid
                 cursor.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, 1)", [nuevo_id])
  
@@ -322,3 +338,4 @@ def acciones_post():
         return jsonify({"status": "error", "message": f"Error de DB: {str(e)}"})
     finally:
         if conexion: conexion.close()
+ 

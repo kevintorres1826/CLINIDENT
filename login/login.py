@@ -2,96 +2,115 @@ import os
 import sys
 import sqlite3
 from flask import Blueprint, request, jsonify, session
-
-# Solución de portabilidad absoluta: Encuentra la ruta raíz del .exe o script principal
+ 
 if getattr(sys, 'frozen', False):
     ruta_base = os.path.dirname(sys.executable)
 else:
-    # Sube un nivel si este archivo está metido dentro de la subcarpeta 'login/'
     ruta_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# Ruta unificada a la base de datos real
+ 
 RUTA_BD = os.path.join(ruta_base, "clinident.db")
-
-# Creamos el Blueprint para esta carpetita
+ 
 login_blueprint = Blueprint('login_blueprint', __name__)
-
+ 
+ 
 @login_blueprint.route('/login', methods=['POST'])
 def ejecutar_login():
-    """
-    Controlador de inicio de sesión individual.
-    Mantiene la lógica exacta de tu login.php original pero adaptado a SQLite portable.
-    """
-    # Capturar parámetros (Soporta formularios tradicionales POST y Fetch/JSON)
     if request.is_json:
         datos = request.get_json() or {}
         correo_input = datos.get('usuario', '').strip()
-        pass_input = datos.get('contrasena', '')
+        pass_input   = datos.get('contrasena', '')
     else:
         correo_input = request.form.get('usuario', '').strip()
-        pass_input = request.form.get('contrasena', '')
-
+        pass_input   = request.form.get('contrasena', '')
+ 
     if not correo_input or not pass_input:
         return jsonify({'status': 'error', 'msg': '⚠️ Por favor escribe tu correo y contraseña.'})
-
+ 
     conexion = None
     try:
-        # Nos conectamos directamente a la ruta unificada de la base de datos
         conexion = sqlite3.connect(RUTA_BD)
-        
-        # 🚀 CONFIGURACIÓN CLAVE: Mapea las columnas para poder llamarlas por su nombre usuario['contrasena']
-        conexion.row_factory = sqlite3.Row 
-        
+        conexion.row_factory = sqlite3.Row
         cursor = conexion.cursor()
-
-        # Buscamos al usuario únicamente por su correo electrónico
-        sql_user = """
-            SELECT id_usuario, id_rol, nombre, apellido, contrasena, estado 
-            FROM tblusuario 
-            WHERE correo = ?
-        """
-        cursor.execute(sql_user, [correo_input])
+ 
+        # Obtener usuario
+        cursor.execute("""
+            SELECT id_usuario, nombre, apellido, contrasena, estado
+            FROM tblusuario WHERE correo = ?
+        """, [correo_input])
         usuario = cursor.fetchone()
-
-        if usuario:
-            # Ahora sí puedes acceder de forma segura usando las claves de texto 🎉
-            if pass_input == usuario['contrasena']:
-                if usuario['estado'] != 'Activo':
-                    return jsonify({'status': 'error', 'msg': '⚠️ Tu usuario clínico se encuentra inactivo.'})
-
-                # Guardamos las variables de sesión
-                session['id_usuario'] = usuario['id_usuario']
-                session['id_rol'] = usuario['id_rol']
-                session['nombre'] = usuario['nombre']
-                session['nombre_usuario'] = usuario['nombre'] # Compatibilidad de la agenda
-                session['apellido'] = usuario['apellido']
-                session['correo'] = correo_input
-                
-                # Mapeo de rutas dinámicas según el rol
-                rutas = {
-                    1: '/web/odontologo/panel_medico.html',
-                    2: '/web/odontologo/panel_medico.html',
-                    3: '/web/recepcionista/panel_rec.html',
-                    4: '/web/agenda_cliente/index.html'
-                }
-                
-                redireccion = rutas.get(usuario['id_rol'], '../agenda_cliente/index.html')
-                
-                return jsonify({
-                    'status': 'success',
-                    'msg': '¡Ingreso correcto!',
-                    'redirect': redireccion,
-                    'nombre': usuario['nombre'],
-                    'id_rol': usuario['id_rol'] 
-                })
-            else:
-                return jsonify({'status': 'error', 'msg': '⚠️ Correo o contraseña incorrectos.'})
-        else:
+ 
+        if not usuario or pass_input != usuario['contrasena']:
             return jsonify({'status': 'error', 'msg': '⚠️ Correo o contraseña incorrectos.'})
-
+ 
+        if usuario['estado'] != 'Activo':
+            return jsonify({'status': 'error', 'msg': '⚠️ Tu usuario clínico se encuentra inactivo.'})
+ 
+        # Obtener TODOS los roles del usuario desde tblusuario_rol
+        cursor.execute("""
+            SELECT id_rol FROM tblusuario_rol
+            WHERE id_usuario = ?
+            ORDER BY id_rol ASC
+        """, [usuario['id_usuario']])
+        roles = [r['id_rol'] for r in cursor.fetchall()]
+ 
+        # Fallback: si la tabla aún no existe o está vacía, leer id_rol legacy
+        if not roles:
+            cursor.execute("SELECT id_rol FROM tblusuario WHERE id_usuario = ?", [usuario['id_usuario']])
+            fila = cursor.fetchone()
+            if fila and fila['id_rol']:
+                roles = [fila['id_rol']]
+ 
+        if not roles:
+            return jsonify({'status': 'error', 'msg': '⚠️ El usuario no tiene ningún rol asignado.'})
+ 
+        # Guardar sesión
+        session['id_usuario']     = usuario['id_usuario']
+        session['nombre']         = usuario['nombre']
+        session['nombre_usuario'] = usuario['nombre']
+        session['apellido']       = usuario['apellido']
+        session['correo']         = correo_input
+        session['roles']          = roles          # lista completa
+        session['id_rol']         = roles[0]       # rol principal (el más bajo numéricamente = más privilegios)
+ 
+        # ── Lógica de redirección ─────────────────────────────────────────
+        # El admin (1) no tiene panel propio: usa el panel del siguiente rol
+        # que tenga asignado. Orden de prioridad de destino: 2 → 3 → 4
+        # Ejemplos:
+        #   roles [1, 2] → panel médico   (odontólogo)
+        #   roles [1, 3] → panel recepción
+        #   roles [1, 4] → agenda cliente
+        #   roles [1]    → agenda cliente (admin puro, sin otro rol)
+        #   roles [2]    → panel médico
+        #   roles [3]    → panel recepción
+        #   roles [4]    → agenda cliente
+ 
+        rutas = {
+            2: '/web/odontologo/panel_medico.html',
+            3: '/web/recepcionista/panel_rec.html',
+            4: '/web/agenda_cliente/index.html'
+        }
+ 
+        # Buscar el primer rol con panel propio, saltando el rol admin (1)
+        rol_destino = next((r for r in sorted(roles) if r != 1), None)
+ 
+        # Si solo tiene rol 1 (admin puro sin otro rol asignado) → agenda cliente
+        if rol_destino is None:
+            rol_destino = 4
+ 
+        redireccion = rutas.get(rol_destino, '/web/agenda_cliente/index.html')
+ 
+        return jsonify({
+            'status':   'success',
+            'msg':      '¡Ingreso correcto!',
+            'redirect': redireccion,
+            'nombre':   usuario['nombre'],
+            'roles':    roles,
+            'id_rol':   rol_destino
+        })
+ 
     except sqlite3.Error as e:
-        return jsonify({'status': 'error', 'msg': f'Error de lectura local: {str(e)}'})
-        
+        return jsonify({'status': 'error', 'msg': f'Error de base de datos: {str(e)}'})
     finally:
         if conexion:
             conexion.close()
+ 
