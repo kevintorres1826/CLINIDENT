@@ -1,6 +1,6 @@
 
 import socket  # Librería nativa para verificar la disponibilidad de puerto
-from flask import Flask, send_from_directory, session, jsonify, redirect
+from flask import Flask, send_from_directory, session, jsonify, redirect, request
 from flask_cors import CORS
 from datetime import timedelta
 import os
@@ -426,12 +426,20 @@ def servir_frontend(carpeta, archivo):
     para evitar accesos a páginas incorrectas según el estado de la sesión.
     """
     
-    # 🚨 GUARDIA 1: Si ya inició sesión e intenta volver al Login, lo mandamos a la Agenda
+    # 🚨 GUARDIA 1: Si ya inició sesión e intenta volver al Login (o retroceder), lo mandamos a su panel
     if carpeta == 'login' and archivo == 'login.html':
         if 'id_usuario' in session:
-            print(f"🔄 Usuario con ID {session['id_usuario']} ya activo. Redirigiendo a la agenda.")
-            return redirect('/web/agenda_cliente/index.html')
- 
+            id_rol = session.get('id_rol', 4)
+            rutas_por_rol = {
+                1: '/web/odontologo/panel_medico.html',
+                2: '/web/odontologo/panel_medico.html',
+                3: '/web/recepcionista/panel_rec.html',
+                4: '/web/agenda_cliente/index.html'
+            }
+            redireccion = rutas_por_rol.get(id_rol, '/web/agenda_cliente/index.html')
+            print(f"🔄 Usuario con ID {session['id_usuario']} ya activo. Redirigiendo a su panel.")
+            return redirect(redireccion)
+
     # 🚨 GUARDIA 2: Si NO ha iniciado sesión e intenta meterse a la Agenda, lo mandamos al Login
     if carpeta == 'agenda_cliente' and archivo == 'index.html':
         if 'id_usuario' not in session:
@@ -446,7 +454,7 @@ def servir_frontend(carpeta, archivo):
         if not _roles_frescos(session['id_usuario']) & {1, 2}:
             print('🚫 Rol insuficiente para el panel médico.')
             return redirect('/web/login/login.html')
- 
+
     if carpeta == 'recepcionista':
         if 'id_usuario' not in session:
             return redirect('/web/login/login.html')
@@ -454,12 +462,23 @@ def servir_frontend(carpeta, archivo):
         if not _roles_frescos(session['id_usuario']) & {1, 3}:
             print('🚫 Rol insuficiente para el panel de recepción.')
             return redirect('/web/login/login.html')
- 
+
     # Si todo está en orden, sirve el archivo de forma normal
     carpeta_modulo = os.path.join(ruta_frontend, carpeta)
     return send_from_directory(carpeta_modulo, archivo)
- 
-    
+
+# --- ANTIDOTO PARA LAS FLECHAS DEL NAVEGADOR (ELIMINAR CACHÉ) ---
+@app.after_request
+def desactivar_cache_navegador(response):
+    """
+    Fuerza al navegador a NO almacenar en caché las páginas HTML del sistema.
+    Esto obliga a que las flechas de 'Atrás' consulten siempre a Flask.
+    """
+    if request.path.startswith('/web/'):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
  
 # --- FUNCIÓN INTELIGENTE DE PORTABILIDAD ---
 def encontrar_puerto_libre(puerto_inicial):

@@ -20,7 +20,7 @@
 body {
     margin:0;
     font-family:'Plus Jakarta Sans',sans-serif;
-    color:white;
+    color:rgb(253, 253, 253);
     background:
     radial-gradient(circle at 15% 20%,rgba(56,189,248,.20),transparent 25%),
     radial-gradient(circle at 85% 10%,rgba(139,92,246,.20),transparent 25%),
@@ -190,14 +190,14 @@ body {
 
     padding:40px;
 
-    color:white;
+    color:rgb(133, 131, 243);
 }
 .panel-header { margin-bottom: 25px; }
 .panel-header h2 { margin: 0 0 8px 0; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.3px; }
 .panel-header p { margin: 0; color: var(--text-secondary); font-size: 0.95rem; }
 
 .back-link {
-    background: none; border: none; color: var(--brand-color);
+    background: none; border: none; color: white;
     font-weight: 700; cursor: pointer; padding: 0; margin-bottom: 15px;
     display: inline-block; font-size: 0.9rem;
 }
@@ -242,7 +242,7 @@ body {
 .tcard-duracion { font-size: 0.8rem; font-weight: 700; color: var(--brand-color); text-transform: uppercase; }
 .tcard-check {
     width: 24px; height: 24px; border-radius: 50%; background: var(--brand-color);
-    color: white; display: flex; align-items: center; justify-content: center;
+    color: rgb(71, 21, 250); display: flex; align-items: center; justify-content: center;
     font-weight: bold; font-size: 0.8rem; visibility: hidden; opacity: 0; transition: all 0.2s;
 }
 .tcard-check.visible { visibility: visible; opacity: 1; }
