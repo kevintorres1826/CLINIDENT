@@ -1,5 +1,7 @@
+
 import os
 import sys
+import time
 import sqlite3
 from flask import Blueprint, request, jsonify, session
  
@@ -26,24 +28,61 @@ def ejecutar_login():
     if not correo_input or not pass_input:
         return jsonify({'status': 'error', 'msg': '⚠️ Por favor escribe tu correo y contraseña.'})
  
+    # ── RATE LIMITING: verificar bloqueo activo ────────────────────────────
+    ahora = int(time.time())
+ 
+    if 'bloqueado_hasta' in session and ahora < session['bloqueado_hasta']:
+        tiempo_restante = session['bloqueado_hasta'] - ahora
+        return jsonify({
+            'status':          'error',
+            'msg':             f'⚠️ Demasiados intentos fallidos. Espera {tiempo_restante} segundos.',
+            'bloqueado':       True,
+            'tiempo_restante': tiempo_restante
+        }), 429
+    # ──────────────────────────────────────────────────────────────────────
+ 
     conexion = None
     try:
         conexion = sqlite3.connect(RUTA_BD)
         conexion.row_factory = sqlite3.Row
         cursor = conexion.cursor()
  
-        # Obtener usuario
+        # Obtener usuario por correo
         cursor.execute("""
             SELECT id_usuario, nombre, apellido, contrasena, estado
             FROM tblusuario WHERE correo = ?
         """, [correo_input])
         usuario = cursor.fetchone()
  
+        # ── Credenciales incorrectas: contador de intentos ─────────────────
         if not usuario or pass_input != usuario['contrasena']:
-            return jsonify({'status': 'error', 'msg': '⚠️ Correo o contraseña incorrectos.'})
+            intentos = session.get('intentos_fallidos', 0) + 1
+            session['intentos_fallidos'] = intentos
+ 
+            if intentos >= 3:
+                session['bloqueado_hasta']  = ahora + 30
+                session['intentos_fallidos'] = 0
+                return jsonify({
+                    'status':          'error',
+                    'msg':             '⚠️ Has superado los 3 intentos. Ingreso bloqueado por 30 segundos.',
+                    'bloqueado':       True,
+                    'tiempo_restante': 30
+                }), 429
+ 
+            restantes = 3 - intentos
+            return jsonify({
+                'status': 'error',
+                'msg':    f'⚠️ Correo o contraseña incorrectos. Intentos restantes: {restantes}.'
+            })
+        # ──────────────────────────────────────────────────────────────────
  
         if usuario['estado'] != 'Activo':
             return jsonify({'status': 'error', 'msg': '⚠️ Tu usuario clínico se encuentra inactivo.'})
+ 
+        # ── ÉXITO: limpiar contadores ──────────────────────────────────────
+        session.pop('intentos_fallidos', None)
+        session.pop('bloqueado_hasta',   None)
+        # ──────────────────────────────────────────────────────────────────
  
         # Obtener TODOS los roles del usuario desde tblusuario_rol
         cursor.execute("""
@@ -69,17 +108,17 @@ def ejecutar_login():
         session['nombre_usuario'] = usuario['nombre']
         session['apellido']       = usuario['apellido']
         session['correo']         = correo_input
-        session['roles']          = roles          # lista completa
-        session['id_rol']         = roles[0]       # rol principal (el más bajo numéricamente = más privilegios)
+        session['roles']          = roles      # lista completa
+        session['id_rol']         = roles[0]   # rol principal
  
-        # ── Lógica de redirección ─────────────────────────────────────────
-        # El admin (1) no tiene panel propio: usa el panel del siguiente rol
-        # que tenga asignado. Orden de prioridad de destino: 2 → 3 → 4
+        # ── Lógica de redirección ──────────────────────────────────────────
+        # El admin (1) no tiene panel propio: usa el panel del siguiente rol.
+        # Orden de prioridad de destino: 2 → 3 → 4
         # Ejemplos:
         #   roles [1, 2] → panel médico   (odontólogo)
         #   roles [1, 3] → panel recepción
         #   roles [1, 4] → agenda cliente
-        #   roles [1]    → agenda cliente (admin puro, sin otro rol)
+        #   roles [1]    → agenda cliente  (admin puro)
         #   roles [2]    → panel médico
         #   roles [3]    → panel recepción
         #   roles [4]    → agenda cliente
