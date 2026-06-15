@@ -1,3 +1,5 @@
+
+
 /* ══════════════════════════════════════════════════════
    CLINIDENT – Facturación / script.js
 ══════════════════════════════════════════════════════ */
@@ -289,7 +291,6 @@ async function emitirFactura() {
     
     const valorIva = (precioBase + cobroExtra) * (impuestoPorcentaje / 100);
     
-
     facturaActual = {
       id_factura:  data.id_factura,
       paciente:    citaSeleccionada.nombre_paciente,
@@ -300,6 +301,7 @@ async function emitirFactura() {
       diagnostico,
       precio_base: precioBase,
       cobro_extra: cobroExtra,
+      iva:         valorIva, // 👈 ¡LISTO! Agregado para que no se pierda.
       total:       precioBase + cobroExtra + valorIva, // <- Total con IVA incluido
       metodo:      ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo]
     };
@@ -322,7 +324,13 @@ async function emitirFactura() {
 }
  
 /* ══ MODAL FACTURA ══════════════════════════════════ */
+/* ══ MODAL FACTURA DETALLADA (CORREGIDO PARA PRECIO BASE) ════════════════ */
 function mostrarFacturaModal(f) {
+  // Aseguramos compatibilidad: si no encuentra con guion bajo, busca en Mayúscula (o por defecto 0)
+  const pBase      = f.precio_base !== undefined ? f.precio_base : (f.precioBase || 0);
+  const cExtra     = f.cobro_extra !== undefined ? f.cobro_extra : (f.cobroExtra || 0);
+  const ivaFactura = f.iva         !== undefined ? f.iva         : (f.valorIva || 0);
+  
   document.getElementById('contenido-factura').innerHTML = `
     <div class="factura-header">
       <h2>CLINIDENT</h2>
@@ -337,13 +345,14 @@ function mostrarFacturaModal(f) {
       <div><strong>Fecha de emisión</strong><br>${new Date().toLocaleDateString('es-CO')}</div>
     </div>
     <table class="factura-tabla">
-      <thead><tr><th>Tratamiento</th><th>Diagnóstico</th><th>Precio base</th><th>Cobro extra</th><th>Total</th></tr></thead>
+      <thead><tr><th>Tratamiento</th><th>Diagnóstico</th><th>Precio base</th><th>Cobro extra</th><th>IVA (19%)</th><th>Total</th></tr></thead>
       <tbody>
         <tr>
           <td>${f.tratamiento}</td>
-          <td>${f.diagnostico}</td>
-          <td>${formatCOP(f.precio_base)}</td>
-          <td>${formatCOP(f.cobro_extra)}</td>
+          <td>${f.diagnostico || '—'}</td>
+          <td>${formatCOP(pBase)}</td>
+          <td>${formatCOP(cExtra)}</td>
+          <td>${formatCOP(ivaFactura)}</td>
           <td>${formatCOP(f.total)}</td>
         </tr>
       </tbody>
@@ -358,8 +367,10 @@ function cerrarModal() {
 }
  
 /* ══ HISTORIAL DE PAGOS ═════════════════════════════ */
+/* ══ HISTORIAL DE PAGOS (CORREGIDO) ══════════════ */
 function verPagos() {
-  let html = `<h2 style="margin-bottom:14px">📂 Historial de facturas</h2>`;
+  let html = `<h2 style="margin-bottom:4px">📂 Historial de facturas</h2>`;
+  html += `<p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">💡 Haz clic en cualquier fila para ver el desglose completo de la factura.</p>`;
  
   if (pagosLocales.length === 0) {
     html += `<p style="color:var(--muted)">No hay facturas registradas en esta sesión.</p>`;
@@ -367,8 +378,9 @@ function verPagos() {
     html += `<table class="tabla-pagos">
       <thead><tr><th>#</th><th>Paciente</th><th>Tratamiento</th><th>Total</th></tr></thead><tbody>`;
     pagosLocales.forEach(p => {
-      html += `<tr>
-        <td>${p.id_factura}</td>
+      html += `
+      <tr onclick="verFacturaHistorica(${p.id_factura})" style="cursor: pointer;" title="Haga clic para expandir factura">
+        <td><strong>#${p.id_factura}</strong></td>
         <td>${p.paciente}</td>
         <td>${p.tratamiento}</td>
         <td>${formatCOP(p.total)}</td>
@@ -378,7 +390,11 @@ function verPagos() {
   }
  
   document.getElementById('contenido-pagos').innerHTML = html;
-  document.getElementById('modal-pagos').classList.add('visible');
+  
+  // ─── LÍNEAS DE CONTROL CORREGIDAS ───
+  const modalPagos = document.getElementById('modal-pagos');
+  modalPagos.style.display = 'flex'; // 👈 CAMBIO AQUÍ: Fuerza visualmente al navegador a renderizarlo como Flex
+  modalPagos.classList.add('visible');
 }
  
 /* ══ MÉTODOS DE PAGO – UI ═══════════════════════════ */
@@ -427,3 +443,15 @@ function mostrarToast(msg, tipo = 'ok') {
   toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
 }
  
+
+function verFacturaHistorica(idFactura) {
+  const facturaEnc = pagosLocales.find(p => p.id_factura === idFactura);
+  if (facturaEnc) {
+    const modalPagos = document.getElementById('modal-pagos');
+    modalPagos.classList.remove('visible');
+    modalPagos.style.display = 'none'; // Se oculta temporalmente con seguridad
+    
+    // Abre el visor completo de la factura elegida
+    mostrarFacturaModal(facturaEnc);
+  }
+}

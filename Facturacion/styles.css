@@ -566,3 +566,9 @@ body {
   color: #1e40af;
   font-weight: 600;
 }
+
+/* Efecto de iluminación al pasar el mouse por el historial */
+.tabla-pagos tbody tr:hover {
+  background-color: #f1f5f9 !important; /* Cambia al color de fondo que uses */
+  transition: background-color 0.2s ease;
+}
