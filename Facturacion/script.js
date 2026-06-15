@@ -1,4 +1,3 @@
-
 /* ══════════════════════════════════════════════════════
    CLINIDENT – Facturación / script.js
 ══════════════════════════════════════════════════════ */
@@ -120,10 +119,9 @@ async function seleccionarCita(id) {
   document.getElementById('form-factura').classList.remove('oculto');
  
   // Resetear campos de precio/descuento
-  document.getElementById('diagnostico').value = '';
-  document.getElementById('valor').value       = '';
-  document.getElementById('descuento').value   = 0;
-  document.getElementById('impuesto').value    = 0;
+  document.getElementById('diagnostico').value  = '';
+  document.getElementById('precio-base').value  = '';
+  document.getElementById('cobro-extra').value  = '';
   calcularTotal();
  
   // Cargar tratamientos del odontólogo → luego autoseleccionar
@@ -144,7 +142,7 @@ async function cargarTratamientos(idOdo, tratamientoAgendado) {
  
     select.innerHTML = '<option value="">Seleccione el procedimiento…</option>' +
       tratamientosOdo.map(t =>
-        `<option value="${t.id_tipo}" data-precio="${t.precio_referencia}">${t.nombre}</option>`
+        `<option value="${t.id_tipo}" data-precio="${t.precio_base}">${t.nombre}</option>`
       ).join('');
  
     // ── AUTOSELECCIÓN ─────────────────────────────────────────────────────
@@ -218,59 +216,41 @@ function actualizarPrecioReferencia() {
   const select = document.getElementById('tipo-tratamiento');
   const opt    = select.options[select.selectedIndex];
   const precio = parseFloat(opt?.dataset?.precio || 0);
-  const hint   = document.getElementById('precio-ref');
- 
-  if (precio > 0) {
-    hint.textContent = `Precio de referencia: ${formatCOP(precio)}`;
-    if (!document.getElementById('valor').value) {
-      document.getElementById('valor').value = precio;
-      calcularTotal();
-    }
-  } else {
-    hint.textContent = '';
-  }
+  document.getElementById('precio-base').value = precio || '';
+  document.getElementById('cobro-extra').value = '';
+  calcularTotal();
 }
  
 /* ══ CÁLCULO ════════════════════════════════════════ */
 function calcularTotal() {
-  const valor   = parseFloat(document.getElementById('valor').value)     || 0;
-  const desc    = parseFloat(document.getElementById('descuento').value) || 0;
-  const imp     = parseFloat(document.getElementById('impuesto').value)  || 0;
-  const descVal = valor * (desc / 100);
-  const base    = valor - descVal;
-  const impVal  = base  * (imp  / 100);
-  const total   = base  + impVal;
- 
-  document.getElementById('prev-subtotal').textContent  = formatCOP(valor);
-  document.getElementById('prev-descuento').textContent = `-${formatCOP(descVal)}`;
-  document.getElementById('prev-impuesto').textContent  = `+${formatCOP(impVal)}`;
-  document.getElementById('prev-total').textContent     = formatCOP(total);
+  const base  = parseFloat(document.getElementById('precio-base').value)  || 0;
+  const extra = parseFloat(document.getElementById('cobro-extra').value) || 0;
+  const total = base + extra;
+  document.getElementById('prev-base').textContent  = formatCOP(base);
+  document.getElementById('prev-extra').textContent = `+${formatCOP(extra)}`;
+  document.getElementById('prev-total').textContent = formatCOP(total);
 }
  
 /* ══ EMITIR FACTURA ═════════════════════════════════ */
 async function emitirFactura() {
   if (!citaSeleccionada) { mostrarToast('⚠️ Selecciona una cita primero', 'warn'); return; }
  
-  const idTipo     = parseInt(document.getElementById('tipo-tratamiento').value);
+  const idTipo      = parseInt(document.getElementById('tipo-tratamiento').value);
   const diagnostico = document.getElementById('diagnostico').value.trim();
-  const valor      = parseFloat(document.getElementById('valor').value);
-  const descuento  = parseFloat(document.getElementById('descuento').value) || 0;
-  const impuesto   = parseFloat(document.getElementById('impuesto').value)  || 0;
-  const idMetodo   = parseInt(document.querySelector('input[name="metodo"]:checked').value);
- 
-  if (!idTipo)              { mostrarToast('⚠️ Selecciona un tipo de tratamiento', 'warn'); return; }
-  if (!diagnostico)         { mostrarToast('⚠️ Escribe el diagnóstico', 'warn'); return; }
-  if (!valor || valor <= 0) { mostrarToast('⚠️ Ingresa un valor mayor a 0', 'warn'); return; }
- 
+  const precioBase  = parseFloat(document.getElementById('precio-base').value) || 0;
+  const cobroExtra  = parseFloat(document.getElementById('cobro-extra').value) || 0;
+  const idMetodo    = parseInt(document.querySelector('input[name="metodo"]:checked').value);
+
+  if (!idTipo)      { mostrarToast('⚠️ Selecciona un tipo de tratamiento', 'warn'); return; }
+  if (!diagnostico) { mostrarToast('⚠️ Escribe el diagnóstico', 'warn'); return; }
+
   const payload = {
     id_cita:        citaSeleccionada.id_cita,
     id_odontologo:  citaSeleccionada.id_odontologo,
     id_paciente:    citaSeleccionada.id_paciente,
     id_tipo:        idTipo,
     diagnostico,
-    valor,
-    descuento,
-    impuesto,
+    cobro_extra:    cobroExtra,
     id_metodo_pago: idMetodo
   };
  
@@ -286,11 +266,8 @@ async function emitirFactura() {
  
     const nombreTratamiento = document.getElementById('tipo-tratamiento')
       .options[document.getElementById('tipo-tratamiento').selectedIndex].text;
-    const descVal = valor * (descuento / 100);
-    const base    = valor - descVal;
-    const impVal  = base  * (impuesto  / 100);
-    const total   = base  + impVal;
- 
+    const total = precioBase + cobroExtra;
+
     facturaActual = {
       id_factura:  data.id_factura,
       paciente:    citaSeleccionada.nombre_paciente,
@@ -299,9 +276,8 @@ async function emitirFactura() {
       fecha_cita:  citaSeleccionada.fecha,
       tratamiento: nombreTratamiento,
       diagnostico,
-      valor_base:  valor,
-      descuento:   descVal,
-      impuesto:    impVal,
+      precio_base: precioBase,
+      cobro_extra: cobroExtra,
       total,
       metodo:      ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo]
     };
@@ -339,11 +315,13 @@ function mostrarFacturaModal(f) {
       <div><strong>Fecha de emisión</strong><br>${new Date().toLocaleDateString('es-CO')}</div>
     </div>
     <table class="factura-tabla">
-      <thead><tr><th>Tratamiento</th><th>Diagnóstico</th><th>Total</th></tr></thead>
+      <thead><tr><th>Tratamiento</th><th>Diagnóstico</th><th>Precio base</th><th>Cobro extra</th><th>Total</th></tr></thead>
       <tbody>
         <tr>
           <td>${f.tratamiento}</td>
           <td>${f.diagnostico}</td>
+          <td>${formatCOP(f.precio_base)}</td>
+          <td>${formatCOP(f.cobro_extra)}</td>
           <td>${formatCOP(f.total)}</td>
         </tr>
       </tbody>

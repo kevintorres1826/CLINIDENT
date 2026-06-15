@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, session
 import sqlite3
 import os
@@ -27,6 +26,7 @@ def _migrar():
     migraciones = [
         "ALTER TABLE tbltratamiento ADD COLUMN id_cita INTEGER REFERENCES tblcita(id_cita)",
         "ALTER TABLE tblcita ADD COLUMN tratamiento VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE tbltratamiento ADD COLUMN cobro_extra DECIMAL(12,2) DEFAULT 0.00",
     ]
     conn = sqlite3.connect(RUTA_BD)
     for sql in migraciones:
@@ -93,21 +93,24 @@ def tratamientos_por_odontologo(id_odo):
         cursor = conn.cursor()
  
         cursor.execute("""
-            SELECT DISTINCT
-                tt.id_tipo,
-                tt.nombre,
-                COALESCE(AVG(t.valor), 0) AS precio_referencia
-            FROM tbltipotratamiento tt
-            LEFT JOIN tbltratamiento t
-                   ON t.id_tipo = tt.id_tipo
-                  AND t.id_odontologo = ?
-            GROUP BY tt.id_tipo, tt.nombre
-            ORDER BY tt.nombre ASC
-        """, (id_odo,))
- 
+            SELECT
+                id_tipo,
+                nombre,
+                COALESCE(precio_base, 0) AS precio_base
+            FROM tbltipotratamiento
+            WHERE nombre IN (
+                'Limpieza dental',
+                'Revisión general',
+                'Ortodoncia',
+                'Endodoncia',
+                'Cirugía oral'
+            )
+            ORDER BY nombre ASC
+        """)
         filas = cursor.fetchall()
         conn.close()
         return jsonify({"status": "success", "tratamientos": [dict(f) for f in filas]})
+
  
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -120,25 +123,32 @@ def registrar_factura():
     data = request.get_json()
  
     required = ["id_cita", "id_odontologo", "id_paciente",
-                "id_tipo", "diagnostico", "valor", "id_metodo_pago"]
+                "id_tipo", "diagnostico", "cobro_extra", "id_metodo_pago"]
     for campo in required:
         if campo not in data:
             return jsonify({"status": "error",
                             "message": f"Campo requerido faltante: {campo}"}), 400
- 
+
     try:
         descuento   = float(data.get("descuento", 0))
         impuesto    = float(data.get("impuesto",  0))
-        valor_base  = float(data["valor"])
-        valor_final = valor_base * (1 - descuento / 100) * (1 + impuesto / 100)
- 
+        cobro_extra = float(data["cobro_extra"])
+
         conn = get_db()
         cursor = conn.cursor()
- 
+
+        # Precio base definido en el tipo de tratamiento
+        cursor.execute("SELECT COALESCE(precio_base, 0) FROM tbltipotratamiento WHERE id_tipo = ?", (data["id_tipo"],))
+        row = cursor.fetchone()
+        precio_base = float(row[0]) if row else 0.0
+
+        subtotal    = precio_base + cobro_extra
+        valor_final = subtotal * (1 - descuento / 100) * (1 + impuesto / 100)
+
         cursor.execute("""
-            INSERT INTO tbltratamiento (id_tipo, diagnostico, valor, id_odontologo, id_usuario, id_cita)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (data["id_tipo"], data["diagnostico"], round(valor_final, 2),
+            INSERT INTO tbltratamiento (id_tipo, diagnostico, valor, cobro_extra, id_odontologo, id_usuario, id_cita)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (data["id_tipo"], data["diagnostico"], round(valor_final, 2), round(cobro_extra, 2),
               data["id_odontologo"], data["id_paciente"], data["id_cita"]))
         id_tratamiento = cursor.lastrowid
  

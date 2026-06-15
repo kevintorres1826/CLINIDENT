@@ -1,3 +1,4 @@
+
 import socket  # Librería nativa para verificar la disponibilidad de puerto
 from flask import Flask, send_from_directory, session, jsonify, redirect, request
 from flask_cors import CORS
@@ -185,21 +186,20 @@ def inicializar_base_de_datos():
         CREATE TABLE IF NOT EXISTS `tbltipotratamiento` (
           `id_tipo` INTEGER PRIMARY KEY AUTOINCREMENT,
           `nombre` varchar(80) NOT NULL UNIQUE,
-          `descripcion` text DEFAULT NULL,
-          `precio_base` DECIMAL(12,2) DEFAULT 0.00
+          `descripcion` text DEFAULT NULL
         );
  
-        INSERT OR IGNORE INTO `tbltipotratamiento` (`id_tipo`, `nombre`, `descripcion`, `precio_base`) VALUES
-        (1, 'Limpieza dental', 'Profilaxis y remoción de sarro y placa bacteriana', 80000.00),
-        (2, 'Ortodoncia', 'Corrección de posición dental mediante brackets o alineadores', 150000.00),
-        (3, 'Endodoncia', 'Tratamiento de conducto radicular', 350000.00),
-        (4, 'Blanqueamiento', 'Aclaramiento del esmalte dental', 0.00),
-        (5, 'Extracción', 'Remoción de diente o muela', 0.00),
-        (6, 'Implante dental', 'Implante de titanio con corona cerámica', 0.00),
-        (7, 'Resina', 'Restauración estética con resina compuesta', 0.00),
-        (8, 'Sellantes', 'Aplicación de sellantes de fisuras para prevención', 0.00),
-        (9, 'Prótesis', 'Diseño y colocación de prótesis dental removible o fija', 0.00),
-        (10, 'Cirugía oral', 'Extracción de muela del juicio u otras cirugías orales', 450000.00);
+        INSERT OR IGNORE INTO `tbltipotratamiento` (`id_tipo`, `nombre`, `descripcion`) VALUES
+        (1, 'Limpieza dental', 'Profilaxis y remoción de sarro y placa bacteriana'),
+        (2, 'Ortodoncia', 'Corrección de posición dental mediante brackets o alineadores'),
+        (3, 'Endodoncia', 'Tratamiento de conducto radicular'),
+        (4, 'Blanqueamiento', 'Aclaramiento del esmalte dental'),
+        (5, 'Extracción', 'Remoción de diente o muela'),
+        (6, 'Implante dental', 'Implante de titanio con corona cerámica'),
+        (7, 'Resina', 'Restauración estética con resina compuesta'),
+        (8, 'Sellantes', 'Aplicación de sellantes de fisuras para prevención'),
+        (9, 'Prótesis', 'Diseño y colocación de prótesis dental removible o fija'),
+        (10, 'Cirugía oral', 'Extracción de muela del juicio u otras cirugías orales');
  
         CREATE TABLE IF NOT EXISTS `tbltratamiento` (
           `id_tratamiento` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -354,39 +354,8 @@ def inicializar_base_de_datos():
     else:
         print(f"📁 Base de datos detectada con éxito en: {RUTA_BD} (No requiere recreación).")
  
-def migrar_precio_base():
-    conn = sqlite3.connect(RUTA_BD)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("ALTER TABLE tbltipotratamiento ADD COLUMN precio_base DECIMAL(12,2) DEFAULT 0.00")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
-
-    precios = [
-        (80000.00,  'Limpieza dental'),
-        (150000.00, 'Ortodoncia'),
-        (350000.00, 'Endodoncia'),
-        (450000.00, 'Cirugía oral'),
-    ]
-    for precio, nombre in precios:
-        cursor.execute(
-            "UPDATE tbltipotratamiento SET precio_base = ? WHERE nombre = ? AND precio_base = 0",
-            (precio, nombre)
-        )
-
-    # Insertar Revisión general si no existe
-    cursor.execute("""
-        INSERT OR IGNORE INTO tbltipotratamiento (nombre, descripcion, precio_base)
-        VALUES ('Revisión general', 'Consulta y revisión odontológica general', 15000.00)
-    """)
-    conn.commit()
-    conn.close()
-    print("✅ Precios base sincronizados en tbltipotratamiento.")
-
 # Ejecutamos la revisión y montaje de la BD antes de encender la aplicación
 inicializar_base_de_datos()
-migrar_precio_base()
  
 # 2. CONFIGURACIÓN DE SEGURIDAD (CORS)
 # Añadimos "null" para dar soporte completo a archivos locales abiertos con doble clic (file://)
