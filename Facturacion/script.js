@@ -225,9 +225,24 @@ function actualizarPrecioReferencia() {
 function calcularTotal() {
   const base  = parseFloat(document.getElementById('precio-base').value)  || 0;
   const extra = parseFloat(document.getElementById('cobro-extra').value) || 0;
-  const total = base + extra;
+  
+  // 1. Calcular el subtotal primero
+  const subtotal = base + extra;
+  
+  // 2. Verificar si el checkbox de IVA está marcado
+  const aplicarIva = document.getElementById('aplicar-iva').checked;
+  
+  // 3. Si está marcado es el 19%, si no, es 0
+  const tarifaIva = aplicarIva ? 0.19 : 0;
+  const valorIva = subtotal * tarifaIva;
+  
+  // 4. El total final incluye el impuesto
+  const total = subtotal + valorIva;
+  
+  // 5. Renderizar los valores formateados en la interfaz
   document.getElementById('prev-base').textContent  = formatCOP(base);
   document.getElementById('prev-extra').textContent = `+${formatCOP(extra)}`;
+  document.getElementById('prev-iva').textContent   = `+${formatCOP(valorIva)}`; // <- Nueva línea
   document.getElementById('prev-total').textContent = formatCOP(total);
 }
  
@@ -241,6 +256,9 @@ async function emitirFactura() {
   const cobroExtra  = parseFloat(document.getElementById('cobro-extra').value) || 0;
   const idMetodo    = parseInt(document.querySelector('input[name="metodo"]:checked').value);
 
+  // Agrega esta línea justo debajo de donde obtienes "idMetodo" en emitirFactura()
+  const impuestoPorcentaje = document.getElementById('aplicar-iva').checked ? 19 : 0;
+
   if (!idTipo)      { mostrarToast('⚠️ Selecciona un tipo de tratamiento', 'warn'); return; }
   if (!diagnostico) { mostrarToast('⚠️ Escribe el diagnóstico', 'warn'); return; }
 
@@ -251,7 +269,8 @@ async function emitirFactura() {
     id_tipo:        idTipo,
     diagnostico,
     cobro_extra:    cobroExtra,
-    id_metodo_pago: idMetodo
+    id_metodo_pago: idMetodo,
+    impuesto:       impuestoPorcentaje // <- LE PASAMOS EL 19 O EL 0 A PYTHON
   };
  
   try {
@@ -267,6 +286,9 @@ async function emitirFactura() {
     const nombreTratamiento = document.getElementById('tipo-tratamiento')
       .options[document.getElementById('tipo-tratamiento').selectedIndex].text;
     const total = precioBase + cobroExtra;
+    
+    const valorIva = (precioBase + cobroExtra) * (impuestoPorcentaje / 100);
+    
 
     facturaActual = {
       id_factura:  data.id_factura,
@@ -278,7 +300,7 @@ async function emitirFactura() {
       diagnostico,
       precio_base: precioBase,
       cobro_extra: cobroExtra,
-      total,
+      total:       precioBase + cobroExtra + valorIva, // <- Total con IVA incluido
       metodo:      ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo]
     };
  

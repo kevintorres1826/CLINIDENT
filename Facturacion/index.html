@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,7 +9,6 @@
 </head>
 <body>
  
-<!-- ══════════════ NAVBAR ══════════════ -->
 <nav class="navbar">
   <div class="logo">CLINI<span>DENT</span></div>
   <div class="nav-right">
@@ -19,10 +17,8 @@
   </div>
 </nav>
  
-<!-- ══════════════ LAYOUT PRINCIPAL ══════════════ -->
 <div class="page-layout">
  
-  <!-- ── COLUMNA IZQUIERDA: lista de citas ── -->
   <aside class="sidebar-citas">
     <div class="sidebar-header">
       <h2>📅 Citas agendadas</h2>
@@ -40,20 +36,16 @@
     </div>
   </aside>
  
-  <!-- ── COLUMNA DERECHA: formulario de factura ── -->
   <main class="main-factura">
  
-    <!-- Estado vacío -->
     <div id="estado-vacio" class="empty-state">
       <div class="empty-icon">🦷</div>
       <h3>Ninguna cita seleccionada</h3>
       <p>Elige una cita de la lista para generar su factura.</p>
     </div>
  
-    <!-- Formulario (oculto hasta elegir cita) -->
     <div id="form-factura" class="form-factura oculto">
  
-      <!-- Resumen de la cita elegida -->
       <div class="cita-resumen" id="cita-resumen"></div>
  
       <div class="form-card">
@@ -84,11 +76,22 @@
             <span class="hint">Materiales o implementos adicionales</span>
           </div>
         </div>
+
+        <div class="field-group" style="margin: 16px 0 8px 0; display: flex; flex-direction: row; align-items: center; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px dashed var(--border);">
+          <input type="checkbox" id="aplicar-iva" onchange="calcularTotal()" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--blue);">
+          <div style="display: flex; flex-direction: column;">
+            <label for="aplicar-iva" style="margin-bottom: 0; cursor: pointer; font-weight: 700; color: var(--text); font-size: 14px;">¿Grabar procedimiento con IVA (19%)?</label>
+            <span style="font-size: 11px; color: var(--muted);">Activar solo si es un tratamiento estético/cosmético según Art. 476 E.T.</span>
+          </div>
+        </div>
+ 
         <div class="total-preview">
           <span>Precio base</span>
           <strong id="prev-base">$0</strong>
           <span>Cobro extra</span>
           <strong id="prev-extra">+$0</strong>
+          <span>IVA (19%)</span>
+          <strong id="prev-iva">+$0</strong>
           <span class="total-label">TOTAL A PAGAR</span>
           <strong class="total-valor" id="prev-total">$0</strong>
         </div>
@@ -120,10 +123,9 @@
       </button>
  
     </div>
-  </main>
+  </nav>
 </div>
  
-<!-- ══════════════ MODAL FACTURA EMITIDA ══════════════ -->
 <div class="modal-bg" id="modal-factura">
   <div class="modal-box">
     <div id="contenido-factura"></div>
@@ -134,7 +136,6 @@
   </div>
 </div>
  
-<!-- ══════════════ MODAL HISTORIAL PAGOS ══════════════ -->
 <div class="modal-bg" id="modal-pagos">
   <div class="modal-box">
     <div id="contenido-pagos"></div>
