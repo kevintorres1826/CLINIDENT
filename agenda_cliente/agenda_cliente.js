@@ -228,6 +228,12 @@ function finalizarAgendado() {
     const doctorId = document.getElementById("doc").value;
     const hora     = document.getElementById("hora-seleccionada").value;
  
+    // Capturar nombre del doctor para el modal
+    const docSelect   = document.getElementById("doc");
+    const doctorNombre = docSelect.options[docSelect.selectedIndex]
+                         ? docSelect.options[docSelect.selectedIndex].text
+                         : "Especialista";
+ 
     if (!fecha || !hora || !doctorId) {
         mostrarToast("⚠️ Por favor selecciona fecha, horario y especialista."); return;
     }
@@ -245,13 +251,38 @@ function finalizarAgendado() {
     .then(res => res.json())
     .then(data => {
         if (data.status === "success") {
-            mostrarToast(editId ? "¡Cita reprogramada con éxito!" : "¡Cita médica guardada correctamente! 🎉");
-            setTimeout(() => { renderLista(); cambiarVista('menu'); }, 1300);
+            // === REGLA R4: CARGAR DETALLES EN EL MODAL DE NOTIFICACIÓN ===
+            const nombreTratamiento = tratamientoSeleccionado
+                ? tratamientoSeleccionado.nombre
+                : "Tratamiento Odontológico";
+ 
+            // Formatear fecha a DD/MM/YYYY para mostrar más legible
+            const partesFecha = fecha.split("-");
+            const fechaLegible = partesFecha.length === 3
+                ? `${partesFecha[2]}/${partesFecha[1]}/${partesFecha[0]}`
+                : fecha;
+ 
+            document.getElementById("notif-tratamiento").innerText = nombreTratamiento;
+            document.getElementById("notif-doctor").innerText      = doctorNombre;
+            document.getElementById("notif-fecha").innerText       = fechaLegible;
+            document.getElementById("notif-hora").innerText        = hora;
+ 
+            // Mostrar el modal emergente detallado
+            document.getElementById("modal-notificacion").style.display = "flex";
+ 
+            // Refrescar lista en segundo plano
+            renderLista();
         } else {
             mostrarToast("❌ " + data.message);
         }
     })
     .catch(err => console.error(err));
+}
+ 
+// ─── MODAL DE NOTIFICACIÓN: cerrar y volver al menú ───────────────────────
+function cerrarModalNotificacion() {
+    document.getElementById("modal-notificacion").style.display = "none";
+    cambiarVista('menu');
 }
  
 // =========================================================================

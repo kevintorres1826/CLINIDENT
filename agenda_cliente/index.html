@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="agenda_cliente.css">
 </head>
 <body>
-
+ 
     <nav class="app-navbar">
         <div class="nav-container">
             <div class="app-logo" onclick="cambiarVista('menu')">
@@ -20,16 +20,16 @@
                 <button id="btn-switch-medico" class="btn-switch-module" onclick="irAModoMedico()" style="display: none;">
                     👨‍⚕️ Vista Médico
                 </button>
-
+ 
                 <button id="btn-volver-mi-panel" class="btn-switch-module" style="display: none; background: #16a34a; color: white;">
                 </button>
                 <button class="btn-logout" onclick="cerrarSesion()" title="Cerrar Sesión">🚪 Salir</button>
             </div>
         </div>
     </nav>
-
+ 
     <div class="main-wrapper">
-
+ 
         <div id="view-menu" class="view active">
             <div class="welcome-section">
                 <h1 class="main-title">Hola, <span id="nombre-usuario-bienvenida">Paciente</span></h1>
@@ -56,42 +56,42 @@
                 </div>
             </div>
         </div>
-
+ 
         <div id="view-tratamiento" class="view panel-card">
             <div class="panel-header">
                 <button class="back-link" onclick="cambiarVista('menu')">← Volver al Panel</button>
                 <h2>¿Qué servicio necesitas hoy?</h2>
                 <p>Selecciona la especialidad para asignarte el consultorio y doctor correspondientes.</p>
             </div>
-
+ 
             <div class="timeline-steps">
                 <div class="t-step current"><span>1</span> Tratamiento</div>
                 <div class="t-line"></div>
                 <div class="t-step"><span>2</span> Fecha y Hora</div>
             </div>
-
+ 
             <div id="grid-tratamientos" class="treatments-list-layout">
             </div>
-
+ 
             <div class="panel-footer">
                 <button class="action-btn-submit" id="btn-continuar-trat" disabled onclick="confirmarTratamiento()">
                     Continuar a Fecha y Hora →
                 </button>
             </div>
         </div>
-
+ 
         <div id="view-agendar" class="view panel-card">
             <div class="panel-header">
                 <button class="back-link" onclick="volverATratamiento()">← Modificar Servicio</button>
                 <h2 id="titulo-agendar">Planifica tu visita</h2>
             </div>
-
+ 
             <div class="timeline-steps">
                 <div class="t-step completed">✓ Tratamiento</div>
                 <div class="t-line active"></div>
                 <div class="t-step current"><span>2</span> Fecha y Hora</div>
             </div>
-
+ 
             <div class="selected-service-banner">
                 <div class="banner-badge" id="trat-icon-header">🦷</div>
                 <div class="banner-details">
@@ -99,7 +99,7 @@
                     <p>⏱ Duración estimada: <span id="trat-duracion-header">—</span> &nbsp;|&nbsp; 🩺 <span id="trat-doctor-header">—</span></p>
                 </div>
             </div>
-
+ 
             <div class="booking-form-grid">
                 <div class="field-box">
                     <label for="fecha">Fecha de la Cita</label>
@@ -112,37 +112,58 @@
                     </select>
                 </div>
             </div>
-
+ 
             <div class="hours-section">
                 <label class="section-tag">Horarios Disponibles para esta fecha</label>
                 <div id="grid-horas" class="hours-flex-grid">
                 </div>
             </div>
-
+ 
             <input type="hidden" id="edit-id" value="">
             <input type="hidden" id="hora-seleccionada">
-
+ 
             <div class="panel-footer">
                 <button class="action-btn-submit success-theme" id="btn-save" onclick="finalizarAgendado()">
                     Confirmar Reserva Médica
                 </button>
             </div>
         </div>
-
+ 
         <div id="view-lista" class="view panel-card">
             <div class="panel-header">
                 <button class="back-link" onclick="cambiarVista('menu')">← Volver al Panel</button>
                 <h2>Tus Citas Programadas</h2>
                 <p>Historial completo y control de asistencias activas en el sistema.</p>
             </div>
-
+ 
             <div id="lista-citas" class="appointments-vertical-stack">
             </div>
         </div>
-
+ 
     </div>
-
+ 
+    <!-- ============================================================
+         MODAL DE NOTIFICACIÓN DETALLADA (Regla R4)
+         ============================================================ -->
+    <div id="modal-notificacion" class="modal-overlay" style="display: none;">
+        <div class="modal-content-notification">
+            <div class="modal-header-success">
+                <span class="success-icon">✅</span>
+                <h3>¡Cita Agendada Exitosamente!</h3>
+            </div>
+            <div class="modal-body-details">
+                <p><strong>Tratamiento:</strong> <span id="notif-tratamiento"></span></p>
+                <p><strong>Especialista:</strong> <span id="notif-doctor"></span></p>
+                <p><strong>Fecha de Atención:</strong> <span id="notif-fecha"></span></p>
+                <p><strong>Horario:</strong> <span id="notif-hora"></span></p>
+            </div>
+            <p class="notif-footer-text">Por favor, asista 10 minutos antes de su horario reservado.</p>
+            <button class="btn-notif-close" onclick="cerrarModalNotificacion()">Entendido</button>
+        </div>
+    </div>
+ 
     <div class="smart-toast" id="toast">Operación exitosa</div>
     <script src="agenda_cliente.js"></script>
 </body>
 </html>
+ 
