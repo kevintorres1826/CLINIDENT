@@ -43,9 +43,10 @@ _migrar()
  
  
 def obtener_odontologos_disponibles():
-    """
-    Devuelve usuarios con rol 2 (odontólogo) usando tblusuario_rol si existe,
-    con fallback a id_rol legacy.
+    """ 
+    Filtra a los usuarios que EXCLUSIVAMENTE tengan el rol 2 (Odontólogo). 
+    Un administrador (rol 1) no aparecerá aquí a menos que también se le haya 
+    asignado el rol 2 explícitamente en el panel.
     """
     conexion = sqlite3.connect(RUTA_BD)
     conexion.row_factory = sqlite3.Row

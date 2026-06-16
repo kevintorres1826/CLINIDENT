@@ -38,12 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 // El botón "Vista Paciente" ya está aquí (es esta misma página).
                 const roles = user.roles || [user.id_rol];
                 const navBadge = document.querySelector(".user-badge");
- 
+
                 // Eliminar botones de panel previos (por si se recarga)
                 navBadge.querySelectorAll(".btn-panel-dinamico").forEach(b => b.remove());
- 
-                // Botón panel médico (rol 2 o admin con rol 2)
-                if (roles.includes(2)) {
+
+                // Botón panel médico (Aparece si es Odontólogo (2) o Administrador (1))
+                if (roles.includes(2) || roles.includes(1)) {
                     const btn = document.createElement("button");
                     btn.className   = "btn-switch-module btn-panel-dinamico";
                     btn.innerText   = "🩺 Panel Médico";
@@ -51,9 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Insertar antes del botón Salir
                     navBadge.insertBefore(btn, document.querySelector(".btn-logout"));
                 }
- 
-                // Botón panel recepción (rol 3)
-                if (roles.includes(3)) {
+
+                // Botón panel recepción (Aparece si es Recepcionista (3) o Administrador (1))
+                if (roles.includes(3) || roles.includes(1)) {
                     const btn = document.createElement("button");
                     btn.className   = "btn-switch-module btn-panel-dinamico";
                     btn.style.background = "#0ea5e9";
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     btn.onclick     = () => window.location.href = '../recepcionista/panel_rec.html';
                     navBadge.insertBefore(btn, document.querySelector(".btn-logout"));
                 }
- 
+
                 // Ocultar el btn-volver-mi-panel estático (ya no se usa)
                 const btnVolverViejo = document.getElementById("btn-volver-mi-panel");
                 if (btnVolverViejo) btnVolverViejo.style.display = "none";

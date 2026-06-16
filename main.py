@@ -450,6 +450,7 @@ def _roles_frescos(id_usuario):
  
  
 # --- MOTOR DE FRONTEND INTEGRADO CON PROTECCIÓN DE RUTAS (SOLO UNO) ---
+# --- MOTOR DE FRONTEND INTEGRADO CON PROTECCIÓN DE RUTAS (SOLO UNO) ---
 @app.route('/web/<carpeta>/<archivo>', methods=['GET'])
 def servir_frontend(carpeta, archivo):
     """
@@ -457,40 +458,40 @@ def servir_frontend(carpeta, archivo):
     para evitar accesos a páginas incorrectas según el estado de la sesión.
     """
     
-    # 🚨 GUARDIA 1: Si ya inició sesión e intenta volver al Login (o retroceder), lo mandamos a su panel
+    roles_usuario = set()
+    if 'id_usuario' in session:
+        roles_usuario = _roles_frescos(session['id_usuario'])
+
+    # 🚨 GUARDIA 1: Si ya inició sesión e intenta volver al Login, lo mandamos a su panel
     if carpeta == 'login' and archivo == 'login.html':
-        if 'id_usuario' in session:
-            id_rol = session.get('id_rol', 4)
-            rutas_por_rol = {
-                1: '/web/odontologo/panel_medico.html',
-                2: '/web/odontologo/panel_medico.html',
-                3: '/web/recepcionista/panel_rec.html',
-                4: '/web/agenda_cliente/index.html'
-            }
-            redireccion = rutas_por_rol.get(id_rol, '/web/agenda_cliente/index.html')
+        if roles_usuario:
+            # Prioridad de paneles: Admin(1) -> Odontologo(2) -> Recepcion(3) -> Paciente(4)
+            if 1 in roles_usuario:   redireccion = '/web/recepcionista/panel_rec.html' # El admin entra por defecto a recepción para ver el global
+            elif 2 in roles_usuario: redireccion = '/web/odontologo/panel_medico.html'
+            elif 3 in roles_usuario: redireccion = '/web/recepcionista/panel_rec.html'
+            else:                    redireccion = '/web/agenda_cliente/index.html'
             print(f"🔄 Usuario con ID {session['id_usuario']} ya activo. Redirigiendo a su panel.")
             return redirect(redireccion)
 
     # 🚨 GUARDIA 2: Si NO ha iniciado sesión e intenta meterse a la Agenda, lo mandamos al Login
     if carpeta == 'agenda_cliente' and archivo == 'index.html':
-        if 'id_usuario' not in session:
+        if not roles_usuario:
             print("🚫 Intento de acceso no autorizado a la agenda. Redirigiendo al Login.")
             return redirect('/web/login/login.html')
         
     if carpeta == 'odontologo':
-        if 'id_usuario' not in session:
-            print('🚫 Acceso no autorizado al panel médico. Redirigiendo al Login.')
+        if not roles_usuario:
             return redirect('/web/login/login.html')
-        # Consulta roles frescos desde BD — refleja cambios sin necesidad de re-login
-        if not _roles_frescos(session['id_usuario']) & {1, 2}:
+        # Admin (1) o Odontólogo (2) tienen acceso
+        if not (roles_usuario & {1, 2}):
             print('🚫 Rol insuficiente para el panel médico.')
             return redirect('/web/login/login.html')
 
     if carpeta == 'recepcionista':
-        if 'id_usuario' not in session:
+        if not roles_usuario:
             return redirect('/web/login/login.html')
-        # Consulta roles frescos desde BD — refleja cambios sin necesidad de re-login
-        if not _roles_frescos(session['id_usuario']) & {1, 3}:
+        # Admin (1) o Recepcionista (3) tienen acceso
+        if not (roles_usuario & {1, 3}):
             print('🚫 Rol insuficiente para el panel de recepción.')
             return redirect('/web/login/login.html')
 
