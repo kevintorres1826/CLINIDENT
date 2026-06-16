@@ -1,308 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
+ 
 :root {
     --primary: #0f172a;
-    --accent: #0ea5e9;
+    --accent: #38bdf8;
+    --accent-purple: #8b5cf6;
+    --accent-hover: #0ea5e9;
     --bg: #f8fafc;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
+    --brand-color: #0052FF;
+    --brand-hover: #0041cc;
+    --brand-light: #eff4ff;
+    --border-ui: #e2e8f0;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --surface-glass: rgba(255, 255, 255, 0.05);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --shadow-glow: 0 0 40px rgba(56, 189, 248, 0.15), 0 0 70px rgba(139, 92, 246, 0.15);
 }
  
-/* ─── BASE ─── */
+/* ─── BASE CON FONDO OSCURO PREMIUM ─── */
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: var(--bg);
-    color: var(--primary);
+    color: rgb(253, 253, 253);
+    background:
+        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, .20), transparent 25%),
+        radial-gradient(circle at 85% 10%, rgba(139, 92, 246, .20), transparent 25%),
+        radial-gradient(circle at 50% 100%, rgba(6, 182, 212, .12), transparent 40%),
+        linear-gradient(135deg, #020617, #0f172a, #111827);
     min-height: 100vh;
 }
  
-/* ─── NAVBAR ─── */
+/* CUADRÍCULA SUTIL SOBRE EL FONDO */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, .015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+}
+ 
+/* ─── NAVBAR PREMIUM CON BLUR ─── */
 .navbar {
     width: 100%;
-    background: white;
-    padding: 18px 40px;
-    border-bottom: 1px solid #e2e8f0;
+    background: rgba(255, 255, 255, .05);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    padding: 14px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
  
-.logo-container { font-weight: 800; font-size: 24px; }
+.logo-container {
+    font-weight: 900;
+    font-size: 26px;
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    cursor: pointer;
+}
+ 
 .accent-text { color: var(--accent); }
  
-.btn-back {
-    background: #f1f5f9;
-    color: var(--primary);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-}
- 
-/* ─── VISTA PANEL MÉDICO ─── */
-#vista-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 10px;
-}
- 
-.welcome-section {
-    text-align: center;
-    margin: 40px 0;
-}
- 
-.welcome-section h1 { font-size: 2.5rem; margin-bottom: 10px; }
-.welcome-section p { color: #64748b; font-size: 1.1rem; }
- 
-.menu-doctor {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 30px;
-    width: 90%;
-    max-width: 850px;
-}
- 
-.card-opcion {
-    background: white;
-    padding: 50px 30px;
-    border-radius: 30px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
- 
-.card-opcion:hover {
-    transform: translateY(-10px);
-    border-color: var(--accent);
-    box-shadow: 0 20px 40px rgba(14, 165, 233, 0.1);
-}
- 
-.icon { font-size: 60px; margin-bottom: 20px; display: block; }
-h3 { font-size: 1.6rem; margin: 15px 0; }
-p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
- 
-.btn-logout {
-    margin-top: 60px;
-    background: none;
-    border: 2px solid #e2e8f0;
-    padding: 12px 30px;
-    border-radius: 12px;
-    font-weight: 700;
-    color: #64748b;
-    cursor: pointer;
-    transition: 0.2s;
-    font-family: inherit;
-}
- 
-.btn-logout:hover {
-    background: #fee2e2;
-    color: #ef4444;
-    border-color: #fecaca;
-}
- 
-/* ─── VISTA AGENDA ─── */
-.container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
- 
-.header-agenda {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
- 
-.header-agenda h2 { margin: 0; font-size: 1.8rem; color: var(--primary); }
-.doc-name { color: #64748b; font-weight: 600; }
- 
-.filtro-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: white;
-    padding: 14px 20px;
-    border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-}
- 
-.filtro-bar label { font-weight: 700; font-size: 0.9rem; color: #64748b; }
- 
-.filtro-bar input[type="date"] {
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    font-family: inherit;
-    font-size: 0.95rem;
-    outline: none;
-}
- 
-.btn-hoy {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.9rem;
-}
- 
-.stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-}
- 
-.stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-}
- 
-.stat-card .num { font-size: 2rem; font-weight: 800; color: var(--accent); }
-.stat-card .lbl { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; font-weight: 600; }
- 
-.cita-card {
-    background: white;
-    border-radius: 18px;
-    padding: 22px 25px;
-    margin-bottom: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-    border-left: 5px solid var(--accent);
-    transition: transform 0.2s;
-    flex-wrap: wrap;
-    gap: 12px;
-}
- 
-.cita-card:hover { transform: translateX(4px); }
-.cita-hora { font-size: 1.5rem; font-weight: 800; color: var(--accent); min-width: 100px; }
-.cita-info { flex: 1; padding: 0 20px; }
-.cita-info .paciente { font-weight: 700; font-size: 1.1rem; }
-.cita-info .detalle { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
- 
-.badge { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
-.badge-pendiente { background: #fef3c7; color: #d97706; }
-.badge-atendido  { background: #d1fae5; color: #059669; }
- 
-.btn-atender {
-    background: var(--success);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.85rem;
-}
- 
-.btn-atender:disabled { background: #e2e8f0; color: #94a3b8; cursor: default; }
- 
-.empty-msg {
-    text-align: center;
-    padding: 60px 20px;
-    color: #94a3b8;
-    font-size: 1.1rem;
-    background: white;
-    border-radius: 20px;
-}
- 
-/* ─── TOAST ─── */
-.toast {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: var(--success);
-    color: white;
-    padding: 14px 22px;
-    border-radius: 14px;
-    font-weight: 700;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.4s ease;
-    z-index: 999;
-}
- 
-.toast.show { opacity: 1; transform: translateY(0); }
- 
-/* ─── PESTAÑAS ─── */
-.tabs-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
- 
-.tab-btn {
-    padding: 10px 22px;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    font-family: inherit;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-}
- 
-.tab-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-}
- 
-/* ─── BOTONES DE FILTRO ─── */
-.btn-filtro {
-    padding: 8px 16px;
-    border-radius: 10px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    font-family: inherit;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-}
- 
-.btn-filtro.active   { background: var(--primary); border-color: var(--primary); color: white; }
-.btn-filtro:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
- 
-/* ─── BADGE CANCELADA ─── */
-.badge-cancelada  { background: #fee2e2; color: #dc2626; }
-.badge-programada { background: #fef3c7; color: #d97706; }
-
-
-
 /* ─── ACCIONES DE LA NAVBAR ─── */
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 12px; /* Espacio entre el botón de volver y el de cambiar módulo */
+    gap: 12px;
 }
-
+ 
+.btn-back {
+    background: rgba(255, 255, 255, .08);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, .12);
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+ 
+.btn-back:hover {
+    background: rgba(255, 255, 255, .14);
+    border-color: rgba(56, 189, 248, .4);
+    color: #38bdf8;
+}
+ 
+/* ─── BOTÓN CAMBIAR MÓDULO ─── */
 .btn-switch-module {
-    background-color: transparent;
-    color: var(--accent);
-    border: 2px solid var(--accent);
+    background-color: rgba(56, 189, 248, .1);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, .35);
     padding: 8px 16px;
     border-radius: 10px;
     font-family: inherit;
@@ -314,17 +118,18 @@ p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
     align-items: center;
     gap: 6px;
 }
-
+ 
 .btn-switch-module:hover {
-    background-color: var(--accent);
+    background-color: rgba(56, 189, 248, .2);
     color: white;
+    border-color: #38bdf8;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+    box-shadow: 0 4px 12px rgba(56, 189, 248, .25);
 }
-
-/* ─── BOTÓN DE CERRAR SESIÓN MÉDICO ─── */
+ 
+/* ─── BOTÓN CERRAR SESIÓN MÉDICO ─── */
 .btn-logout-medico {
-    background-color: var(--danger); /* Usa el rojo #ef4444 definido en tu :root */
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -334,10 +139,475 @@ p.desc { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, .25);
 }
-
+ 
 .btn-logout-medico:hover {
-    background-color: #dc2626; /* Un rojo un poco más oscuro al pasar el mouse */
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, .35);
 }
+ 
+/* ─── BOTÓN LOGOUT DEL PANEL MÉDICO ─── */
+.btn-logout {
+    margin-top: 50px;
+    background: rgba(239, 68, 68, .1);
+    border: 1px solid rgba(239, 68, 68, .3);
+    padding: 12px 30px;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+ 
+.btn-logout:hover {
+    background: rgba(239, 68, 68, .2);
+    border-color: #ef4444;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, .2);
+}
+ 
+/* ─── PANEL PRINCIPAL / WELCOME ─── */
+#vista-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+    position: relative;
+    z-index: 1;
+}
+ 
+.welcome-section {
+    text-align: center;
+    margin: 40px 0;
+}
+ 
+.welcome-section h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #ffffff, #38bdf8, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+ 
+.welcome-section p {
+    color: rgba(255, 255, 255, .55);
+    font-size: 1.1rem;
+}
+ 
+/* ─── MENÚ DOCTOR — CARDS GLASSMORPHISM ─── */
+.menu-doctor {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    width: 90%;
+    max-width: 850px;
+}
+ 
+.card-opcion {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .05);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 28px;
+    padding: 50px 30px;
+    min-height: 200px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+ 
+.card-opcion:hover {
+    transform: translateY(-10px) scale(1.02);
+    border-color: #38bdf8;
+    box-shadow: var(--shadow-glow);
+}
+ 
+.icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    display: block;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, .4));
+}
+ 
+h3 {
+    font-size: 1.5rem;
+    margin: 10px 0;
+    color: white;
+    font-weight: 800;
+}
+ 
+p.desc {
+    color: rgba(255, 255, 255, .55);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+ 
+/* ─── CONTENEDOR DE VISTA AGENDA ─── */
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+ 
+/* ─── HEADER AGENDA ─── */
+.header-agenda {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+ 
+.header-agenda h2 {
+    margin: 0;
+    font-size: 1.9rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+ 
+.doc-name {
+    color: rgba(255, 255, 255, .55);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+ 
+/* ─── BARRA DE FILTRO ─── */
+.filtro-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, .05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, .08);
+    padding: 14px 20px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    transition: border 0.2s;
+}
+ 
+.filtro-bar:hover {
+    border-color: rgba(56, 189, 248, .25);
+}
+ 
+.filtro-bar label {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, .6);
+}
+ 
+.filtro-bar input[type="date"] {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    background: rgba(255, 255, 255, .07);
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: white;
+    outline: none;
+    transition: border 0.2s;
+}
+ 
+.filtro-bar input[type="date"]:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, .15);
+}
+ 
+/* ─── BOTÓN HOY ─── */
+.btn-hoy {
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6, #38bdf8);
+    background-size: 300%;
+    animation: gradientMove 6s linear infinite;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+ 
+.btn-hoy:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(56, 189, 248, .3);
+}
+ 
+/* ─── STATS ROW ─── */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+ 
+.stat-card {
+    background: rgba(255, 255, 255, .05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
+}
+ 
+.stat-card:hover {
+    border-color: rgba(56, 189, 248, .3);
+    box-shadow: 0 0 20px rgba(56, 189, 248, .1);
+    transform: translateY(-3px);
+}
+ 
+.stat-card .num {
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+ 
+.stat-card .lbl {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, .5);
+    margin-top: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+ 
+/* ─── CITA CARD ─── */
+.cita-card {
+    background: rgba(255, 255, 255, .05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 18px;
+    padding: 22px 25px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
+    border-left: 4px solid #38bdf8;
+    transition: all 0.3s ease;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+ 
+.cita-card:hover {
+    transform: translateX(6px);
+    border-color: #38bdf8;
+    box-shadow: 0 0 30px rgba(56, 189, 248, .12);
+}
+ 
+.cita-hora {
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    min-width: 100px;
+}
+ 
+.cita-info { flex: 1; padding: 0 20px; }
+ 
+.cita-info .paciente {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: white;
+}
+ 
+.cita-info .detalle {
+    color: rgba(255, 255, 255, .5);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+ 
+/* ─── BADGES ─── */
+.badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+ 
+.badge-pendiente  { background: rgba(245, 158, 11, .15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, .3); }
+.badge-atendido   { background: rgba(16, 185, 129, .15); color: #10b981; border: 1px solid rgba(16, 185, 129, .3); }
+.badge-cancelada  { background: rgba(239, 68, 68, .15);  color: #ef4444; border: 1px solid rgba(239, 68, 68, .3); }
+.badge-programada { background: rgba(56, 189, 248, .12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, .3); }
+ 
+/* ─── BOTÓN ATENDER ─── */
+.btn-atender {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, .3);
+}
+ 
+.btn-atender:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, .4);
+}
+ 
+.btn-atender:disabled {
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .3);
+    cursor: default;
+    box-shadow: none;
+    transform: none;
+}
+ 
+/* ─── BOTONES FILTRO ─── */
+.btn-filtro {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    background: rgba(255, 255, 255, .05);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, .6);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+ 
+.btn-filtro.active {
+    background: linear-gradient(90deg, rgba(56, 189, 248, .2), rgba(139, 92, 246, .2));
+    border-color: #38bdf8;
+    color: #38bdf8;
+}
+ 
+.btn-filtro:hover:not(.active) {
+    border-color: rgba(56, 189, 248, .35);
+    color: #38bdf8;
+    background: rgba(56, 189, 248, .07);
+}
+ 
+/* ─── PESTAÑAS ─── */
+.tabs-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+ 
+.tab-btn {
+    padding: 10px 22px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    background: rgba(255, 255, 255, .05);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, .55);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+ 
+.tab-btn.active {
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, .3);
+}
+ 
+.tab-btn:hover:not(.active) {
+    border-color: rgba(56, 189, 248, .3);
+    color: #38bdf8;
+}
+ 
+/* ─── EMPTY MESSAGE ─── */
+.empty-msg {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, .4);
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, .03);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 20px;
+    font-weight: 500;
+}
+ 
+/* ─── TOAST ─── */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border: 1px solid rgba(56, 189, 248, .25);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    z-index: 2000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .3), 0 0 20px rgba(56, 189, 248, .1);
+    backdrop-filter: blur(20px);
+}
+ 
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+ 
+/* ─── ANIMACIÓN DEGRADADO EN MOVIMIENTO ─── */
+@keyframes gradientMove {
+    from { background-position: 0%; }
+    to   { background-position: 300%; }
+}
+ 
+/* ─── ANIMACIÓN SLIDE IN ─── */
+@keyframes smoothSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+ 
+.view { display: none; }
+.active { display: block; animation: smoothSlideIn 0.35s ease; }
+ 
+/* ─── RESPONSIVO ─── */
+@media (max-width: 600px) {
+    .navbar { padding: 14px 16px; }
+    .menu-doctor { grid-template-columns: 1fr; }
+    .header-agenda { flex-direction: column; align-items: flex-start; }
+    .cita-card { flex-direction: column; align-items: flex-start; }
+    .tabs-bar { flex-wrap: wrap; }
+    .welcome-section h1 { font-size: 2.2rem; }
+}
+ 
