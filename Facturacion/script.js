@@ -1,507 +1,457 @@
-/* =====================
-   DATOS INICIALES
-===================== */
-let pacientes = JSON.parse(localStorage.getItem("pacientes")) || [
-  { nombre: "Juan Pérez",    documento: "87654321" },
-  { nombre: "María López",   documento: "12345678" },
-  { nombre: "Carlos Torres", documento: "99887766" }
-];
 
-let tratamientos       = [];
-let consultaActiva     = false;
-let totalFinal         = 0;
-let facturaGenerada    = false;
-let pacienteAsistio    = true; // por defecto: sí asistió
 
-let pagos              = JSON.parse(localStorage.getItem("pagos"))              || [];
-let facturasEliminadas = JSON.parse(localStorage.getItem("facturasEliminadas")) || [];
-let inasistencias      = JSON.parse(localStorage.getItem("inasistencias"))      || [];
-let numeroFactura      = parseInt(localStorage.getItem("numeroFactura"))        || 1;
-
-/* =====================
-   BASE DE TRATAMIENTOS
-===================== */
-const tratamientosDB = {
-  "Dra. Paula Ríos - Ortodoncia": [
-    { nombre: "Consulta Ortodoncia",   precio: 75  },
-    { nombre: "Brackets Metálicos",    precio: 300 },
-    { nombre: "Brackets Estéticos",    precio: 450 },
-    { nombre: "Retenedor",             precio: 120 },
-    { nombre: "Control Mensual",       precio: 40  }
-  ],
-  "Dr. Carlos Méndez - Endodoncia": [
-    { nombre: "Endodoncia Unirradicular",   precio: 200 },
-    { nombre: "Endodoncia Multirradicular", precio: 350 },
-    { nombre: "Retratamiento",             precio: 280 },
-    { nombre: "Radiografía",               precio: 30  }
-  ],
-  "Dra. Laura Sánchez - Odontología General": [
-    { nombre: "Consulta General",  precio: 50  },
-    { nombre: "Limpieza Dental",   precio: 60  },
-    { nombre: "Resina Dental",     precio: 90  },
-    { nombre: "Extracción Simple", precio: 110 },
-    { nombre: "Blanqueamiento",    precio: 250 }
-  ]
+/* ══════════════════════════════════════════════════════
+   CLINIDENT – Facturación / script.js
+══════════════════════════════════════════════════════ */
+ 
+const API = 'http://127.0.0.1:5000';
+ 
+let todasLasCitas    = [];
+let citaSeleccionada = null;
+let tratamientosOdo  = [];
+let pagosLocales     = JSON.parse(localStorage.getItem('pagos_clinident')) || [];
+let facturaActual    = null;
+ 
+/* ══ MAPA: texto del panel_rec → nombre en tbltipotratamiento ════════════
+   Las claves son los valores del <select id="tratamiento"> en panel_rec.html.
+   Los valores son subcadenas del nombre en tbltipotratamiento (case-insensitive).
+   Si el texto coincide parcialmente con el nombre del tipo, se autoselecciona. */
+const MAPA_TRATAMIENTO = {
+  'Limpieza Dental':  'limpieza',
+  'Revisión General': 'consulta general',
+  'Ortodoncia':       'ortodoncia',
+  'Endodoncia':       'endodoncia',
+  'Cirugía Oral':     'cirugía oral',
 };
-
-/* =====================
-   PACIENTES
-===================== */
-function cargarPacientes() {
-  let select = document.getElementById("selectPaciente");
-  select.innerHTML = '<option value="">Seleccione</option>';
-  pacientes.forEach((p, i) => {
-    select.innerHTML += `<option value="${i}">${p.nombre}</option>`;
-  });
+ 
+/* ══ INICIALIZACIÓN ═════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  cargarCitas();
+  inicializarMetodosPago();
+});
+ 
+/* ══ CITAS ══════════════════════════════════════════ */
+async function cargarCitas() {
+  try {
+    const res  = await fetch(`${API}/facturacion/citas-pendientes`, { credentials: 'include' });
+    const data = await res.json();
+    if (data.status !== 'success') throw new Error(data.message);
+    todasLasCitas = data.citas;
+    renderCitas(todasLasCitas);
+  } catch (err) {
+    document.getElementById('lista-citas').innerHTML = `
+      <div class="empty-list">
+        <p>⚠️ No se pudieron cargar las citas.<br><small>${err.message}</small></p>
+        <button onclick="cargarCitas()" style="margin-top:12px;padding:8px 16px;border-radius:8px;
+          background:#2563eb;color:white;border:none;cursor:pointer;font-weight:600;">
+          Reintentar
+        </button>
+      </div>`;
+  }
 }
-
-function seleccionarPaciente() {
-  let index = document.getElementById("selectPaciente").value;
-  if (index === "") return;
-  let p = pacientes[index];
-  document.getElementById("nombre").value    = p.nombre;
-  document.getElementById("documento").value = p.documento;
-}
-
-function crearPaciente() {
-  let nom = document.getElementById("nombre").value.trim();
-  let doc = document.getElementById("documento").value.trim();
-
-  if (nom === "" || doc === "") { alert("Ingrese nombre y documento"); return; }
-  if (pacientes.some(p => p.documento === doc)) { alert("Paciente ya registrado"); return; }
-
-  pacientes.push({ nombre: nom, documento: doc });
-  localStorage.setItem("pacientes", JSON.stringify(pacientes));
-  cargarPacientes();
-  alert("Paciente agregado");
-}
-
-function eliminarPaciente() {
-  let index = document.getElementById("selectPaciente").value;
-  if (index === "") { alert("Seleccione un paciente"); return; }
-  if (!confirm("¿Seguro que desea eliminar este paciente?")) return;
-
-  pacientes.splice(index, 1);
-  cargarPacientes();
-  document.getElementById("nombre").value    = "";
-  document.getElementById("documento").value = "";
-  document.getElementById("selectPaciente").value = "";
-  alert("Paciente eliminado");
-}
-
-function historialPaciente() {
-  let doc = document.getElementById("documento").value;
-  if (doc === "") { alert("Seleccione un paciente"); return; }
-
-  let nombrePaciente   = document.getElementById("nombre").value;
-  let facturasPaciente = pagos.filter(p => p.paciente === nombrePaciente);
-
-  let contenido = `<h2>Historial de ${nombrePaciente}</h2>
-  <table class="table">
-    <tr><th>Factura</th><th>Total</th><th>Acción</th></tr>`;
-
-  facturasPaciente.forEach(f => {
-    contenido += `
-    <tr>
-      <td>${f.factura}</td>
-      <td>$${f.total.toFixed(2)}</td>
-      <td><button onclick="verDetalleFactura(${pagos.indexOf(f)})" class="btn-primary">Ver</button></td>
-    </tr>`;
-  });
-
-  contenido += `</table><br>
-  <button onclick="cerrarPagos()" class="btn-primary">Cerrar</button>`;
-
-  document.getElementById("contenidoPagos").innerHTML = contenido;
-  document.getElementById("modalPagos").style.display = "flex";
-}
-
-/* =====================
-   CONSULTA
-===================== */
-function crearConsulta() {
-  if (document.getElementById("nombre").value === "" || document.getElementById("documento").value === "") {
-    alert("Seleccione paciente");
+ 
+function renderCitas(citas) {
+  const contenedor = document.getElementById('lista-citas');
+ 
+  if (citas.length === 0) {
+    contenedor.innerHTML = `<div class="empty-list"><p>✅ No hay citas pendientes de facturar.</p></div>`;
     return;
   }
-  consultaActiva  = true;
-  pacienteAsistio = true; // reset: por defecto sí asistió
-
-  document.getElementById("consultaOK").style.display      = "block";
-  document.getElementById("bloqueAsistencia").style.display = "block";
-
-  // Resetear botones de asistencia
-  document.getElementById("btnSi").classList.add("activo");
-  document.getElementById("btnNo").classList.remove("activo");
-  document.getElementById("motivoInasistenciaBox").style.display = "none";
-  document.getElementById("motivoInasistencia").value = "";
+ 
+  contenedor.innerHTML = citas.map(c => {
+    // Mostrar el tratamiento agendado como badge si existe
+    const badgeTratamiento = c.tratamiento
+      ? `<span class="cita-tratamiento">💊 ${c.tratamiento}</span>`
+      : '';
+    return `
+      <div class="cita-item" data-id="${c.id_cita}" onclick="seleccionarCita(${c.id_cita})">
+        <div class="cita-fecha">
+          ${formatFecha(c.fecha)} · ${c.hora_inicio.slice(0,5)}–${c.hora_fin.slice(0,5)}
+        </div>
+        <div class="cita-paciente">👤 ${c.nombre_paciente}</div>
+        <div class="cita-doctor">🦷 ${c.nombre_odontologo}</div>
+        <div class="cita-badges">
+          <span class="cita-sala">📍 ${c.nombre_sala}</span>
+          ${badgeTratamiento}
+        </div>
+      </div>`;
+  }).join('');
 }
-
-function nuevaConsulta() {
-  consultaActiva  = false;
-  facturaGenerada = false;
-  pacienteAsistio = true;
-  tratamientos    = [];
-
-  renderTabla();
-  document.getElementById("consultaOK").style.display        = "none";
-  document.getElementById("bloqueAsistencia").style.display  = "none";
-  document.getElementById("diagnostico").value               = "";
-  document.getElementById("motivoInasistencia").value        = "";
-  document.getElementById("motivoInasistenciaBox").style.display = "none";
-
-  // Resetear botones de asistencia
-  document.getElementById("btnSi").classList.add("activo");
-  document.getElementById("btnNo").classList.remove("activo");
-}
-
-/* =====================
-   ASISTENCIA
-===================== */
-function setAsistencia(asistio) {
-  pacienteAsistio = asistio;
-
-  if (asistio) {
-    document.getElementById("btnSi").classList.add("activo");
-    document.getElementById("btnNo").classList.remove("activo");
-    document.getElementById("motivoInasistenciaBox").style.display = "none";
-    document.getElementById("btnGuardarInasistencia").style.display = "none"; // ← ocultar
-  } else {
-    document.getElementById("btnNo").classList.add("activo");
-    document.getElementById("btnSi").classList.remove("activo");
-    document.getElementById("motivoInasistenciaBox").style.display = "block";
-    document.getElementById("btnGuardarInasistencia").style.display = "inline-block"; // ← mostrar
+ 
+function filtrarCitas() {
+  const q = document.getElementById('buscador').value.toLowerCase();
+  const filtradas = todasLasCitas.filter(c =>
+    c.nombre_paciente.toLowerCase().includes(q) ||
+    c.nombre_odontologo.toLowerCase().includes(q) ||
+    c.nombre_sala.toLowerCase().includes(q) ||
+    (c.tratamiento || '').toLowerCase().includes(q)
+  );
+  renderCitas(filtradas);
+  if (citaSeleccionada) {
+    document.querySelector(`.cita-item[data-id="${citaSeleccionada.id_cita}"]`)?.classList.add('seleccionada');
   }
 }
-
-function guardarInasistenciaDirecta() {
-  if (!consultaActiva) { alert("Primero cree una consulta"); return; }
-
-  let nombrePaciente = document.getElementById("nombre").value;
-  if (!nombrePaciente) { alert("Seleccione un paciente"); return; }
-
-  if (!confirm(`¿Registrar inasistencia de ${nombrePaciente}?`)) return;
-
-  registrarInasistencia(); // usa tu función existente
-
-  alert("✅ Inasistencia guardada correctamente.");
-
-  // Limpiar consulta y paciente
-  nuevaConsulta();
-  document.getElementById("nombre").value = "";
-  document.getElementById("documento").value = "";
-  document.getElementById("selectPaciente").value = "";
-  document.getElementById("btnGuardarInasistencia").style.display = "none";
+ 
+async function seleccionarCita(id) {
+  document.querySelectorAll('.cita-item').forEach(el => el.classList.remove('seleccionada'));
+  document.querySelector(`.cita-item[data-id="${id}"]`)?.classList.add('seleccionada');
+ 
+  citaSeleccionada = todasLasCitas.find(c => c.id_cita === id);
+  if (!citaSeleccionada) return;
+ 
+  // Resumen superior
+  document.getElementById('cita-resumen').innerHTML = `
+    <div class="resumen-campo">
+      <span class="resumen-label">Paciente</span>
+      <span class="resumen-valor">👤 ${citaSeleccionada.nombre_paciente}</span>
+    </div>
+    <div class="resumen-campo">
+      <span class="resumen-label">Odontólogo</span>
+      <span class="resumen-valor">🦷 ${citaSeleccionada.nombre_odontologo}</span>
+    </div>
+    <div class="resumen-campo">
+      <span class="resumen-label">Fecha y Sala</span>
+      <span class="resumen-valor">
+        ${formatFecha(citaSeleccionada.fecha)} · ${citaSeleccionada.nombre_sala}
+      </span>
+    </div>
+  `;
+ 
+  document.getElementById('estado-vacio').classList.add('oculto');
+  document.getElementById('form-factura').classList.remove('oculto');
+ 
+  // Resetear campos de precio/descuento
+  document.getElementById('diagnostico').value  = '';
+  document.getElementById('precio-base').value  = '';
+  document.getElementById('cobro-extra').value  = '';
+  calcularTotal();
+ 
+  // Cargar tratamientos del odontólogo → luego autoseleccionar
+  await cargarTratamientos(citaSeleccionada.id_odontologo, citaSeleccionada.tratamiento);
 }
-
-function registrarInasistencia() {
-  let motivo = document.getElementById("motivoInasistencia").value.trim() || "Sin motivo indicado";
-  let doctor = document.getElementById("doctor").value;
-
-  inasistencias.push({
-    paciente:  document.getElementById("nombre").value,
-    documento: document.getElementById("documento").value,
-    doctor:    doctor,
-    motivo:    motivo,
-    fecha:     new Date().toLocaleString()
-  });
-
-  localStorage.setItem("inasistencias", JSON.stringify(inasistencias));
-}
-
-function verInasistencias() {
-  let contenido = `<h2>⚠ Historial de Inasistencias</h2>`;
-
-  if (inasistencias.length === 0) {
-    contenido += `<p style="margin-top:15px; color:#64748b;">No hay inasistencias registradas.</p>`;
-  } else {
-    contenido += `
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Paciente</th>
-          <th>Documento</th>
-          <th>Odontólogo</th>
-          <th>Motivo</th>
-          <th>Fecha</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>`;
-
-    inasistencias.forEach((item, index) => {
-      contenido += `
-      <tr>
-        <td>${item.paciente}</td>
-        <td>${item.documento}</td>
-        <td>${item.doctor}</td>
-        <td>${item.motivo}</td>
-        <td>${item.fecha}</td>
-        <td>
-          <button onclick="eliminarInasistencia(${index})" class="btn-danger"
-            style="margin:0; padding:5px 10px;">Eliminar</button>
-        </td>
-      </tr>`;
-    });
-
-    contenido += `</tbody></table>`;
+ 
+/* ══ TRATAMIENTOS ═══════════════════════════════════ */
+async function cargarTratamientos(idOdo, tratamientoAgendado) {
+  const select = document.getElementById('tipo-tratamiento');
+  select.innerHTML = '<option value="">Cargando…</option>';
+ 
+  try {
+    const res  = await fetch(`${API}/facturacion/tratamientos-odontologo/${idOdo}`, { credentials: 'include' });
+    const data = await res.json();
+    if (data.status !== 'success') throw new Error(data.message);
+ 
+    tratamientosOdo = data.tratamientos;
+ 
+    select.innerHTML = '<option value="">Seleccione el procedimiento…</option>' +
+      tratamientosOdo.map(t =>
+        `<option value="${t.id_tipo}" data-precio="${t.precio_base}">${t.nombre}</option>`
+      ).join('');
+ 
+    // ── AUTOSELECCIÓN ─────────────────────────────────────────────────────
+    if (tratamientoAgendado) {
+      autoseleccionarTratamiento(select, tratamientoAgendado);
+    }
+ 
+  } catch (err) {
+    select.innerHTML = '<option value="">Error al cargar tratamientos</option>';
+    console.error(err);
   }
-
-  contenido += `<br><button onclick="cerrarInasistencias()" class="btn-primary">Cerrar</button>`;
-
-  document.getElementById("contenidoInasistencias").innerHTML = contenido;
-  document.getElementById("modalInasistencias").style.display = "flex";
 }
-
-function eliminarInasistencia(index) {
-  if (!confirm("¿Eliminar este registro de inasistencia?")) return;
-  inasistencias.splice(index, 1);
-  localStorage.setItem("inasistencias", JSON.stringify(inasistencias));
-  verInasistencias(); // refrescar modal
+ 
+/**
+ * Busca en el <select> la opción cuyo texto coincida mejor con
+ * el tratamiento guardado al agendar la cita, y la selecciona.
+ *
+ * Estrategia (en orden de prioridad):
+ *  1. Coincidencia exacta (case-insensitive)
+ *  2. El valor del MAPA_TRATAMIENTO apunta a una subcadena del nombre del tipo
+ *  3. El nombre del tipo contiene alguna palabra del tratamiento agendado
+ */
+function autoseleccionarTratamiento(select, tratamientoAgendado) {
+  const agendadoLower = tratamientoAgendado.toLowerCase().trim();
+ 
+  // Clave del mapa que puede estar asociada al texto guardado
+  const subcadenaMapeo = MAPA_TRATAMIENTO[tratamientoAgendado]        // clave exacta
+    ?? Object.entries(MAPA_TRATAMIENTO).find(([k]) =>
+        agendadoLower.includes(k.toLowerCase())
+      )?.[1];                                                          // clave parcial
+ 
+  let mejorOpcion = null;
+ 
+  for (const opt of select.options) {
+    if (!opt.value) continue;
+    const nombreTipo = opt.textContent.toLowerCase().trim();
+ 
+    // Prioridad 1: texto exacto
+    if (nombreTipo === agendadoLower) {
+      mejorOpcion = opt;
+      break;
+    }
+ 
+    // Prioridad 2: el mapa indica que este tipo corresponde al tratamiento
+    if (subcadenaMapeo && nombreTipo.includes(subcadenaMapeo)) {
+      mejorOpcion = opt;
+      break;
+    }
+ 
+    // Prioridad 3: alguna palabra del tratamiento agendado aparece en el nombre del tipo
+    if (!mejorOpcion) {
+      const palabras = agendadoLower.split(/\s+/).filter(p => p.length > 3);
+      if (palabras.some(p => nombreTipo.includes(p))) {
+        mejorOpcion = opt;
+        // No hacemos break: puede aparecer una coincidencia mejor después
+      }
+    }
+  }
+ 
+  if (mejorOpcion) {
+    select.value = mejorOpcion.value;
+    // Disparar el evento para que se autocomplete el precio
+    actualizarPrecioReferencia();
+ 
+    // Indicador visual de que fue autoseleccionado
+    mostrarToast(`✨ Tratamiento autoseleccionado: ${mejorOpcion.textContent}`, 'ok');
+  }
 }
-
-function cerrarInasistencias() {
-  document.getElementById("modalInasistencias").style.display = "none";
-}
-
-/* =====================
-   TRATAMIENTOS
-===================== */
-function actualizarTratamientos() {
-  let doctor = document.getElementById("doctor").value;
-  let lista  = document.getElementById("listaTratamientos");
-  lista.innerHTML = "";
-  tratamientosDB[doctor].forEach(t => {
-    lista.innerHTML += `<option value="${t.precio}">${t.nombre}</option>`;
-  });
-}
-
-function agregarTratamiento() {
-  if (!consultaActiva) { alert("Primero cree una consulta"); return; }
-
-  let lista  = document.getElementById("listaTratamientos");
-  let nombre = lista.options[lista.selectedIndex].text;
-  let precio = parseFloat(lista.value);
-
-  tratamientos.push({ nombre, precio, cantidad: 1 });
-  renderTabla();
+ 
+function actualizarPrecioReferencia() {
+  const select = document.getElementById('tipo-tratamiento');
+  const opt    = select.options[select.selectedIndex];
+  const precio = parseFloat(opt?.dataset?.precio || 0);
+  document.getElementById('precio-base').value = precio || '';
+  document.getElementById('cobro-extra').value = '';
   calcularTotal();
 }
-
-function renderTabla() {
-  let tabla = document.getElementById("tabla");
-  tabla.innerHTML = "";
-
-  tratamientos.forEach((t, i) => {
-    let subtotal = t.precio * t.cantidad;
-    tabla.innerHTML += `
-    <tr>
-      <td>${t.nombre}</td>
-      <td>$${t.precio.toFixed(2)}</td>
-      <td><input type="number" value="${t.cantidad}" min="1"
-            onchange="cambiarCantidad(${i}, this.value)"></td>
-      <td>$${subtotal.toFixed(2)}</td>
-      <td><button onclick="eliminar(${i})">X</button></td>
-    </tr>`;
-  });
-
-  calcularTotal();
-}
-
-function cambiarCantidad(i, val) {
-  let cantidad = parseInt(val);
-  if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
-  tratamientos[i].cantidad = cantidad;
-  renderTabla();
-}
-
-function eliminar(i) {
-  tratamientos.splice(i, 1);
-  renderTabla();
-}
-
-/* =====================
-   CÁLCULO DE TOTALES
-===================== */
+ 
+/* ══ CÁLCULO ════════════════════════════════════════ */
 function calcularTotal() {
-  let subtotalCalc = 0;
-  tratamientos.forEach(t => { subtotalCalc += t.precio * t.cantidad; });
-
-  let descuentoPorc = Math.min(Math.max(parseFloat(document.getElementById("descuento").value) || 0, 0), 100);
-  let impuestoPorc  = Math.min(Math.max(parseFloat(document.getElementById("impuesto").value)  || 0, 0), 100);
-
-  let descuento = subtotalCalc * (descuentoPorc / 100);
-  let base      = subtotalCalc - descuento;
-  let impuesto  = base * (impuestoPorc / 100);
-
-  totalFinal = base + impuesto;
-
-  document.getElementById("subtotal").innerText = "$" + subtotalCalc.toFixed(2);
-  document.getElementById("total").innerText    = totalFinal.toFixed(2);
+  const base  = parseFloat(document.getElementById('precio-base').value)  || 0;
+  const extra = parseFloat(document.getElementById('cobro-extra').value) || 0;
+  
+  // 1. Calcular el subtotal primero
+  const subtotal = base + extra;
+  
+  // 2. Verificar si el checkbox de IVA está marcado
+  const aplicarIva = document.getElementById('aplicar-iva').checked;
+  
+  // 3. Si está marcado es el 19%, si no, es 0
+  const tarifaIva = aplicarIva ? 0.19 : 0;
+  const valorIva = subtotal * tarifaIva;
+  
+  // 4. El total final incluye el impuesto
+  const total = subtotal + valorIva;
+  
+  // 5. Renderizar los valores formateados en la interfaz
+  document.getElementById('prev-base').textContent  = formatCOP(base);
+  document.getElementById('prev-extra').textContent = `+${formatCOP(extra)}`;
+  document.getElementById('prev-iva').textContent   = `+${formatCOP(valorIva)}`; // <- Nueva línea
+  document.getElementById('prev-total').textContent = formatCOP(total);
 }
+ 
+/* ══ EMITIR FACTURA ═════════════════════════════════ */
+async function emitirFactura() {
+  if (!citaSeleccionada) { mostrarToast('⚠️ Selecciona una cita primero', 'warn'); return; }
+ 
+  const idTipo      = parseInt(document.getElementById('tipo-tratamiento').value);
+  const diagnostico = document.getElementById('diagnostico').value.trim();
+  const precioBase  = parseFloat(document.getElementById('precio-base').value) || 0;
+  const cobroExtra  = parseFloat(document.getElementById('cobro-extra').value) || 0;
+  const idMetodo    = parseInt(document.querySelector('input[name="metodo"]:checked').value);
 
-/* =====================
-   FACTURA
-===================== */
-function emitirFactura() {
-  if (!consultaActiva)        { alert("Primero cree una consulta"); return; }
-  if (tratamientos.length === 0) { alert("No hay tratamientos");       return; }
+  // Agrega esta línea justo debajo de donde obtienes "idMetodo" en emitirFactura()
+  const impuestoPorcentaje = document.getElementById('aplicar-iva').checked ? 19 : 0;
 
-  // Si el paciente no asistió, registrar inasistencia y no emitir factura
-  if (!pacienteAsistio) {
-    if (!confirm("El paciente no asistió. ¿Registrar la inasistencia y cerrar la consulta?")) return;
-    registrarInasistencia();
-    alert("Inasistencia registrada correctamente.");
-    nuevaConsulta();
-    document.getElementById("nombre").value    = "";
-    document.getElementById("documento").value = "";
-    document.getElementById("selectPaciente").value = "";
-    return;
+  if (!idTipo)      { mostrarToast('⚠️ Selecciona un tipo de tratamiento', 'warn'); return; }
+  if (!diagnostico) { mostrarToast('⚠️ Escribe el diagnóstico', 'warn'); return; }
+
+  const payload = {
+    id_cita:        citaSeleccionada.id_cita,
+    id_odontologo:  citaSeleccionada.id_odontologo,
+    id_paciente:    citaSeleccionada.id_paciente,
+    id_tipo:        idTipo,
+    diagnostico,
+    cobro_extra:    cobroExtra,
+    id_metodo_pago: idMetodo,
+    impuesto:       impuestoPorcentaje // <- LE PASAMOS EL 19 O EL 0 A PYTHON
+  };
+ 
+  try {
+    const res  = await fetch(`${API}/facturacion/registrar`, {
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status !== 'success') throw new Error(data.message);
+ 
+    const nombreTratamiento = document.getElementById('tipo-tratamiento')
+      .options[document.getElementById('tipo-tratamiento').selectedIndex].text;
+    const total = precioBase + cobroExtra;
+    
+    const valorIva = (precioBase + cobroExtra) * (impuestoPorcentaje / 100);
+    
+    facturaActual = {
+      id_factura:  data.id_factura,
+      paciente:    citaSeleccionada.nombre_paciente,
+      odontologo:  citaSeleccionada.nombre_odontologo,
+      sala:        citaSeleccionada.nombre_sala,
+      fecha_cita:  citaSeleccionada.fecha,
+      tratamiento: nombreTratamiento,
+      diagnostico,
+      precio_base: precioBase,
+      cobro_extra: cobroExtra,
+      iva:         valorIva, // 👈 ¡LISTO! Agregado para que no se pierda.
+      total:       precioBase + cobroExtra + valorIva, // <- Total con IVA incluido
+      metodo:      ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo]
+    };
+ 
+    pagosLocales.push(facturaActual);
+    localStorage.setItem('pagos_clinident', JSON.stringify(pagosLocales));
+ 
+    mostrarFacturaModal(facturaActual);
+    mostrarToast('✅ Factura registrada con éxito', 'ok');
+ 
+    todasLasCitas = todasLasCitas.filter(c => c.id_cita !== citaSeleccionada.id_cita);
+    citaSeleccionada = null;
+    renderCitas(todasLasCitas);
+    document.getElementById('estado-vacio').classList.remove('oculto');
+    document.getElementById('form-factura').classList.add('oculto');
+ 
+  } catch (err) {
+    mostrarToast(`❌ Error: ${err.message}`, 'error');
   }
-
-  let tablaTratamientos = "";
-  tratamientos.forEach(t => {
-    let sub = t.precio * t.cantidad;
-    tablaTratamientos += `
-    <tr>
-      <td>${t.nombre}</td><td>${t.cantidad}</td>
-      <td>$${t.precio.toFixed(2)}</td><td>$${sub.toFixed(2)}</td>
-    </tr>`;
-  });
-
-  let doctorSeleccionado = document.getElementById("doctor").value;
-  let nombrePaciente     = document.getElementById("nombre").value;
-  let docPaciente        = document.getElementById("documento").value;
-
-  let cuerpoFactura = `
+}
+ 
+/* ══ MODAL FACTURA ══════════════════════════════════ */
+/* ══ MODAL FACTURA DETALLADA (CORREGIDO PARA PRECIO BASE) ════════════════ */
+function mostrarFacturaModal(f) {
+  // Aseguramos compatibilidad: si no encuentra con guion bajo, busca en Mayúscula (o por defecto 0)
+  const pBase      = f.precio_base !== undefined ? f.precio_base : (f.precioBase || 0);
+  const cExtra     = f.cobro_extra !== undefined ? f.cobro_extra : (f.cobroExtra || 0);
+  const ivaFactura = f.iva         !== undefined ? f.iva         : (f.valorIva || 0);
+  
+  document.getElementById('contenido-factura').innerHTML = `
     <div class="factura-header">
       <h2>CLINIDENT</h2>
-      <p>Factura #${numeroFactura}</p>
+      <p>Factura N.º ${f.id_factura}</p>
     </div>
-    <p><strong>Paciente:</strong> ${nombrePaciente}</p>
-    <p><strong>Documento:</strong> ${docPaciente}</p>
-    <p><strong>Odontólogo:</strong> ${doctorSeleccionado}</p>
-    <hr>
-    <table class="table">
-      <tr><th>Tratamiento</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr>
-      ${tablaTratamientos}
+    <div class="factura-grid">
+      <div><strong>Paciente</strong><br>${f.paciente}</div>
+      <div><strong>Odontólogo</strong><br>${f.odontologo}</div>
+      <div><strong>Fecha cita</strong><br>${formatFecha(f.fecha_cita)}</div>
+      <div><strong>Sala</strong><br>${f.sala}</div>
+      <div><strong>Método de pago</strong><br>${f.metodo}</div>
+      <div><strong>Fecha de emisión</strong><br>${new Date().toLocaleDateString('es-CO')}</div>
+    </div>
+    <table class="factura-tabla">
+      <thead><tr><th>Tratamiento</th><th>Diagnóstico</th><th>Precio base</th><th>Cobro extra</th><th>IVA (19%)</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>${f.tratamiento}</td>
+          <td>${f.diagnostico || '—'}</td>
+          <td>${formatCOP(pBase)}</td>
+          <td>${formatCOP(cExtra)}</td>
+          <td>${formatCOP(ivaFactura)}</td>
+          <td>${formatCOP(f.total)}</td>
+        </tr>
+      </tbody>
     </table>
-    <h2>Total: $${totalFinal.toFixed(2)}</h2>
+    <div class="factura-total">TOTAL PAGADO: ${formatCOP(f.total)}</div>
   `;
-
-  document.getElementById("contenidoFactura").innerHTML = cuerpoFactura + `
-    <div class="no-print" style="margin-top:20px;">
-      <button onclick="registrarPago()" class="btn-success">Confirmar y Pagar</button>
-      <button onclick="cerrarFactura()"  class="btn-primary">Cerrar</button>
-    </div>
-  `;
-
-  document.getElementById("modalFactura").style.display = "flex";
-  facturaGenerada = true;
+  document.getElementById('modal-factura').classList.add('visible');
 }
-
-function cerrarFactura() {
-  document.getElementById("modalFactura").style.display = "none";
+ 
+function cerrarModal() {
+  document.getElementById('modal-factura').classList.remove('visible');
 }
-
-function registrarPago() {
-  if (!facturaGenerada)                          { alert("Primero emita factura"); return; }
-  if (pagos.some(p => p.factura === numeroFactura)) { alert("Factura ya pagada");   return; }
-
-  let tempDiv = document.createElement("div");
-  tempDiv.innerHTML = document.getElementById("contenidoFactura").innerHTML;
-  let botones = tempDiv.querySelector(".no-print");
-  if (botones) botones.remove();
-
-  pagos.push({
-    factura:     numeroFactura,
-    paciente:    document.getElementById("nombre").value,
-    total:       totalFinal,
-    detalleHTML: tempDiv.innerHTML
-  });
-
-  localStorage.setItem("pagos", JSON.stringify(pagos));
-  alert("Pago registrado con éxito");
-
-  numeroFactura++;
-  localStorage.setItem("numeroFactura", numeroFactura);
-
-  nuevaConsulta();
-  document.getElementById("nombre").value    = "";
-  document.getElementById("documento").value = "";
-  document.getElementById("selectPaciente").value = "";
-
-  cerrarFactura();
-}
-
-/* =====================
-   PAGOS / HISTORIAL
-===================== */
+ 
+/* ══ HISTORIAL DE PAGOS ═════════════════════════════ */
+/* ══ HISTORIAL DE PAGOS (CORREGIDO) ══════════════ */
 function verPagos() {
-  let contenido = `<h2>Historial de Pagos</h2>
-  <table class="table">
-    <tr><th>Factura</th><th>Paciente</th><th>Total</th><th>Acciones</th></tr>`;
-
-  pagos.forEach((p, index) => {
-    contenido += `
-    <tr>
-      <td>${p.factura}</td>
-      <td>${p.paciente}</td>
-      <td>$${p.total.toFixed(2)}</td>
-      <td>
-        <button onclick="verDetalleFactura(${index})" class="btn-primary" style="margin:0;padding:5px 10px;">Ver</button>
-        <button onclick="eliminarFactura(${index})"   class="btn-danger"  style="margin:0;padding:5px 10px;">Eliminar</button>
-      </td>
-    </tr>`;
-  });
-
-  contenido += `</table><br>
-  <button onclick="cerrarPagos()" class="btn-primary">Cerrar</button>`;
-
-  document.getElementById("contenidoPagos").innerHTML = contenido;
-  document.getElementById("modalPagos").style.display = "flex";
+  let html = `<h2 style="margin-bottom:4px">📂 Historial de facturas</h2>`;
+  html += `<p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">💡 Haz clic en cualquier fila para ver el desglose completo de la factura.</p>`;
+ 
+  if (pagosLocales.length === 0) {
+    html += `<p style="color:var(--muted)">No hay facturas registradas en esta sesión.</p>`;
+  } else {
+    html += `<table class="tabla-pagos">
+      <thead><tr><th>#</th><th>Paciente</th><th>Tratamiento</th><th>Total</th></tr></thead><tbody>`;
+    pagosLocales.forEach(p => {
+      html += `
+      <tr onclick="verFacturaHistorica(${p.id_factura})" style="cursor: pointer;" title="Haga clic para expandir factura">
+        <td><strong>#${p.id_factura}</strong></td>
+        <td>${p.paciente}</td>
+        <td>${p.tratamiento}</td>
+        <td>${formatCOP(p.total)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+ 
+  document.getElementById('contenido-pagos').innerHTML = html;
+  
+  // ─── LÍNEAS DE CONTROL CORREGIDAS ───
+  const modalPagos = document.getElementById('modal-pagos');
+  modalPagos.style.display = 'flex'; // 👈 CAMBIO AQUÍ: Fuerza visualmente al navegador a renderizarlo como Flex
+  modalPagos.classList.add('visible');
 }
+ 
+/* ══ MÉTODOS DE PAGO – UI ═══════════════════════════ */
+function inicializarMetodosPago() {
+  document.querySelectorAll('.metodo-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.metodo-card').forEach(c => c.classList.remove('activo'));
+      card.classList.add('activo');
+      card.querySelector('input').checked = true;
+    });
+  });
+}
+ 
+/* ══ UTILIDADES ═════════════════════════════════════ */
+function formatFecha(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`;
+}
+ 
+function formatCOP(n) {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
+}
+ 
+let toastTimeout;
+function mostrarToast(msg, tipo = 'ok') {
+  let toast = document.getElementById('toast-global');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-global';
+    toast.style.cssText = `
+      position:fixed; bottom:90px; right:28px; padding:12px 20px;
+      border-radius:12px; font-weight:600; font-size:14px; z-index:9999;
+      box-shadow:0 8px 24px rgba(0,0,0,.2); transition:opacity .3s;
+      font-family:'Plus Jakarta Sans',sans-serif;
+    `;
+    document.body.appendChild(toast);
+  }
+  const colores = { ok: '#16a34a', warn: '#d97706', error: '#dc2626' };
+  toast.style.background = colores[tipo] || colores.ok;
+  toast.style.color  = 'white';
+  toast.style.opacity = '1';
+  toast.textContent  = msg;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+}
+ 
 
-function verDetalleFactura(index) {
-  let pago = pagos[index];
-  if (pago && pago.detalleHTML) {
-    document.getElementById("contenidoFactura").innerHTML = pago.detalleHTML + `
-      <div style="margin-top:20px;">
-        <button onclick="window.print()" class="btn-success">Imprimir PDF</button>
-        <button onclick="cerrarFactura()"  class="btn-primary">Regresar</button>
-      </div>`;
-
-    document.getElementById("modalPagos").style.display   = "none";
-    document.getElementById("modalFactura").style.display = "flex";
+function verFacturaHistorica(idFactura) {
+  const facturaEnc = pagosLocales.find(p => p.id_factura === idFactura);
+  if (facturaEnc) {
+    const modalPagos = document.getElementById('modal-pagos');
+    modalPagos.classList.remove('visible');
+    modalPagos.style.display = 'none'; // Se oculta temporalmente con seguridad
+    
+    // Abre el visor completo de la factura elegida
+    mostrarFacturaModal(facturaEnc);
   }
 }
-
-function eliminarFactura(index) {
-  let motivo = prompt("Ingrese el motivo de eliminación de la factura:");
-  if (!motivo || motivo.trim() === "") { alert("Debe ingresar un motivo"); return; }
-
-  let factura = pagos[index];
-  facturasEliminadas.push({
-    factura:  factura.factura,
-    paciente: factura.paciente,
-    total:    factura.total,
-    motivo:   motivo,
-    fecha:    new Date().toLocaleString()
-  });
-
-  localStorage.setItem("facturasEliminadas", JSON.stringify(facturasEliminadas));
-  pagos.splice(index, 1);
-  localStorage.setItem("pagos", JSON.stringify(pagos));
-  alert("Factura eliminada y registrada");
-  verPagos();
-}
-
-function cerrarPagos() {
-  document.getElementById("modalPagos").style.display = "none";
-}
-
-/* =====================
-   INICIALIZACIÓN
-===================== */
-actualizarTratamientos();
-cargarPacientes();

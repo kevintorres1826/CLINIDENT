@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLINIDENT | Portal de Acceso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+ 
+  <div class="root" id="root">
+ 
+    <!-- SPLASH SCREEN -->
+    <div class="splash" id="splash">
+      <div class="splash-logo"><i class="ti ti-tooth"></i></div>
+      <div class="splash-name">CLINIDENT</div>
+      <div class="splash-bar"><div class="splash-fill" id="sbar"></div></div>
+      <div class="splash-label" id="slabel">Cargando sistema...</div>
+    </div>
+ 
+    <!-- FONDO DECORATIVO -->
+    <div class="bg-dots"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-glow2"></div>
+ 
+    <!-- CARD PRINCIPAL -->
+    <div class="card-wrap">
+ 
+      <!-- PANEL IZQUIERDO -->
+      <div class="side-panel">
+        <div class="side-dots"></div>
+        <div class="brand">
+          <div class="brand-icon"><i class="ti ti-tooth"></i></div>
+          <div>
+            <div class="brand-text">CLINIDENT</div>
+            <div class="brand-sub">Portal clínico</div>
+          </div>
+        </div>
+        <div class="side-hero">
+          <h2 id="sh2">¡Bienvenido de nuevo!</h2>
+          <p id="sp">Accede a tu historial, citas y tratamientos desde un solo lugar.</p>
+          <div class="side-feat">
+            <div class="feat-item">
+              <div class="feat-icon"><i class="ti ti-calendar-event"></i></div>
+              <span class="feat-text">Citas en línea</span>
+            </div>
+            <div class="feat-item">
+              <div class="feat-icon"><i class="ti ti-file-description"></i></div>
+              <span class="feat-text">Historia clínica digital</span>
+            </div>
+          </div>
+        </div>
+        <div class="side-switch">
+          <span id="sw-hint">¿No tienes cuenta?</span>
+          <button class="btn-sw" id="btn-sw" onclick="toggleMode()">Registrarse aquí</button>
+        </div>
+      </div>
+ 
+      <!-- PANEL DERECHO (slider) -->
+      <div class="form-panel">
+        <div class="form-slider" id="slider">
+ 
+          <!-- PÁGINA: LOGIN + RECUPERACIÓN -->
+          <div class="form-page" id="login-page">
+ 
+            <!-- Tabs -->
+            <div class="sub-tabs">
+              <button class="active" id="tab-login" onclick="showLoginTab('login')">Iniciar sesión</button>
+              <button id="tab-recov" onclick="showLoginTab('recov')">Recuperar cuenta</button>
+              <div class="tab-bar" id="tab-bar"></div>
+            </div>
+            <div class="sub-tabs-line"></div>
+ 
+            <!-- Vista: Login -->
+            <div id="v-login">
+              <h2 class="fh2">Hola de nuevo</h2>
+              <span class="fsub">Ingresa tus credenciales autorizadas</span>
+              <div class="fld">
+                <label>Correo</label>
+                <div class="fi">
+                  <i class="ti ti-mail ico"></i>
+                  <input type="email" id="l-user" placeholder="usuario@clinident.com">
+                </div>
+              </div>
+              <div class="fld">
+                <label>Contraseña</label>
+                <div class="fi">
+                  <i class="ti ti-lock ico"></i>
+                  <input type="password" id="l-pass" placeholder="••••••••">
+                  <button class="eyebtn" onclick="eye('l-pass', this)" aria-label="Ver contraseña"><i class="ti ti-eye"></i></button>
+                </div>
+              </div>
+              <button class="btn-main" onclick="doLogin()">Entrar <i class="ti ti-arrow-right"></i></button>
+            </div>
+ 
+            <!-- Vista: Recuperación -->
+            <div id="v-recov" style="display:none">
+              <div id="rv-opts">
+                <h2 class="fh2">Recuperar acceso</h2>
+                <span class="fsub">¿Cómo prefieres recibir el código?</span>
+                <button class="recov-opt" onclick="selRecov('correo')">
+                  <div class="ro-icon"><i class="ti ti-mail"></i></div>
+                  <div class="ro-text"><strong>Por correo</strong><small>Enviamos código a tu email registrado</small></div>
+                </button>
+                <button class="recov-opt" onclick="selRecov('tel')">
+                  <div class="ro-icon"><i class="ti ti-device-mobile"></i></div>
+                  <div class="ro-text"><strong>Por SMS</strong><small>Enviamos código a tu celular</small></div>
+                </button>
+              </div>
+              <div id="rv-dato" style="display:none">
+                <h2 class="fh2" id="rv-title">Recuperar por correo</h2>
+                <span class="fsub" id="rv-sub">Escribe tu correo registrado</span>
+                <div class="fld">
+                  <label id="rv-lbl">Correo</label>
+                  <div class="fi">
+                    <i class="ti ti-mail ico" id="rv-ico"></i>
+                    <input type="email" id="rv-inp" placeholder="ejemplo@correo.com">
+                  </div>
+                </div>
+                <button class="btn-main" onclick="sendRecov()">Enviar código <i class="ti ti-send"></i></button>
+                <button class="back-btn" onclick="document.getElementById('rv-opts').style.display='';document.getElementById('rv-dato').style.display='none'">
+                  <i class="ti ti-arrow-left"></i> Volver
+                </button>
+              </div>
+              <div id="rv-verif" style="display:none">
+                <div class="code-wrap">
+                  <div class="code-circle"><i class="ti ti-mail-forward"></i></div>
+                </div>
+                <h2 class="fh2" style="text-align:center">Código enviado</h2>
+                <span class="fsub" id="rv-vsub" style="text-align:center;display:block">Ingresa el código de 6 dígitos</span>
+                <input class="code-input" type="text" id="rv-code" maxlength="6" placeholder="• • • • • •">
+                <p class="err" id="rv-err">Código incorrecto, inténtalo de nuevo.</p>
+                <button class="btn-main" onclick="verifyRecov()">Verificar</button>
+                <button class="back-btn" onclick="document.getElementById('rv-verif').style.display='none';document.getElementById('rv-dato').style.display=''">
+                  <i class="ti ti-arrow-left"></i> Volver
+                </button>
+              </div>
+              <div id="rv-newpass" style="display:none">
+                <h2 class="fh2">Nueva contraseña</h2>
+                <span class="fsub">Elige una clave segura</span>
+                <div class="fld">
+                  <label>Nueva contraseña</label>
+                  <div class="fi">
+                    <i class="ti ti-lock ico"></i>
+                    <input type="password" id="np1" placeholder="••••••••">
+                    <button class="eyebtn" onclick="eye('np1', this)" aria-label="Ver contraseña"><i class="ti ti-eye"></i></button>
+                  </div>
+                </div>
+                <div class="fld">
+                  <label>Confirmar</label>
+                  <div class="fi">
+                    <i class="ti ti-lock-check ico"></i>
+                    <input type="password" id="np2" placeholder="••••••••">
+                    <button class="eyebtn" onclick="eye('np2', this)" aria-label="Ver contraseña"><i class="ti ti-eye"></i></button>
+                  </div>
+                </div>
+                <p class="err" id="np-err">Las contraseñas no coinciden.</p>
+                <button class="btn-main" onclick="saveNewPass()">Guardar contraseña <i class="ti ti-check"></i></button>
+              </div>
+            </div>
+ 
+          </div>
+ 
+          <!-- PÁGINA: REGISTRO -->
+          <div class="form-page" id="reg-page">
+            <div class="reg-steps" id="reg-slider">
+ 
+              <!-- Paso 1 -->
+              <div class="reg-step">
+                <h2 class="fh2">Crear cuenta</h2>
+                <span class="fsub">Únete al sistema médico de Clinident</span>
+                <div class="row2">
+                  <div class="fld">
+                    <label>Nombre</label>
+                    <div class="fi"><i class="ti ti-user ico"></i><input type="text" id="r-nom" placeholder="Tu nombre"></div>
+                  </div>
+                  <div class="fld">
+                    <label>Apellido</label>
+                    <div class="fi"><i class="ti ti-user ico"></i><input type="text" id="r-ape" placeholder="Apellido"></div>
+                  </div>
+                </div>
+                <div class="fld">
+                  <label>Correo</label>
+                  <div class="fi"><i class="ti ti-mail ico"></i><input type="email" id="r-email" placeholder="nombre@correo.com"></div>
+                </div>
+                <div class="fld">
+                  <label>Celular</label>
+                  <div class="fi"><i class="ti ti-device-mobile ico"></i><input type="text" id="r-tel" placeholder="3001234567"></div>
+                </div>
+ 
+                <!-- NUEVO: contraseña + confirmar en fila -->
+                <div class="row2">
+                  <div class="fld">
+                    <label>Contraseña</label>
+                    <div class="fi">
+                      <i class="ti ti-lock ico"></i>
+                      <input type="password" id="r-pass" placeholder="••••••••">
+                      <button class="eyebtn" onclick="eye('r-pass', this)" aria-label="Ver contraseña"><i class="ti ti-eye"></i></button>
+                    </div>
+                  </div>
+                  <div class="fld">
+                    <label>Confirmar</label>
+                    <div class="fi">
+                      <i class="ti ti-lock-check ico"></i>
+                      <input type="password" id="r-pass2" placeholder="••••••••">
+                      <button class="eyebtn" onclick="eye('r-pass2', this)" aria-label="Ver contraseña"><i class="ti ti-eye"></i></button>
+                    </div>
+                  </div>
+                </div>
+ 
+                <!-- Indicador visual de coincidencia -->
+                <p class="pass-hint" id="pass-hint"></p>
+ 
+                <div class="policy">
+                  <input type="checkbox" id="r-ok" onchange="document.getElementById('btn-reg').disabled=!this.checked">
+                  <p>Autorizo a <b>CLINIDENT</b> el tratamiento de mis datos según la <a onclick="openModal()">Política de Privacidad</a>.</p>
+                </div>
+                <button class="btn-main" id="btn-reg" disabled onclick="doReg()">Obtener código <i class="ti ti-send"></i></button>
+                <div class="loader-row" id="reg-loader">
+                  <i class="ti ti-loader spin"></i> Procesando...
+                </div>
+              </div>
+ 
+              <!-- Paso 2 -->
+              <div class="reg-step">
+                <div class="code-wrap">
+                  <div class="code-circle"><i class="ti ti-mail-check"></i></div>
+                </div>
+                <h2 class="fh2" style="text-align:center">Confirma tu cuenta</h2>
+                <span class="fsub" style="text-align:center;display:block">Ingresa el código enviado a tu correo</span>
+                <input class="code-input" type="text" id="r-code" maxlength="5" placeholder="_ _ _ _ _">
+                <button class="btn-main green" onclick="finishReg()">Finalizar registro <i class="ti ti-check"></i></button>
+              </div>
+ 
+            </div>
+          </div>
+ 
+        </div>
+ 
+        <!-- MODAL PRIVACIDAD -->
+        <div class="modal-wrap" id="modal">
+          <div class="modal-box">
+            <h3><i class="ti ti-shield-lock"></i> Política de datos</h3>
+            <h4>Finalidad del tratamiento</h4>
+            <p>Gestión de citas odontológicas, historias clínicas, seguimiento de tratamientos y cumplimiento de obligaciones legales en Colombia.</p>
+            <h4>Marco legal</h4>
+            <p>Cumplimiento de la <b>Ley 1581 de 2012</b> y el Decreto 1377 de 2013.</p>
+            <button class="btn-main" style="margin-top:14px" onclick="closeModal()">Entendido <i class="ti ti-check"></i></button>
+          </div>
+        </div>
+ 
+      </div>
+    </div>
+  </div>
+ 
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+ 

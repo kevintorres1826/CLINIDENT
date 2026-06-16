@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINIDENT | Sistema Clínico Profesional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="agenda_cliente.css">
+</head>
+<body>
+
+    <nav class="app-navbar">
+        <div class="nav-container">
+            <div class="app-logo" onclick="cambiarVista('menu')">
+                <span class="icon-brand">✨</span> CLINI<span class="highlight">DENT</span>
+            </div>
+            <div class="user-badge">
+                <div class="avatar-sm">👤</div>
+                <span id="nav-user-display">Cargando...</span>
+                <button id="btn-switch-medico" class="btn-switch-module" onclick="irAModoMedico()" style="display: none;">
+                    👨‍⚕️ Vista Médico
+                </button>
+
+                <button id="btn-volver-mi-panel" class="btn-switch-module" style="display: none; background: #16a34a; color: white;">
+                </button>
+                <button class="btn-logout" onclick="cerrarSesion()" title="Cerrar Sesión">🚪 Salir</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+
+        <div id="view-menu" class="view active">
+            <div class="welcome-section">
+                <h1 class="main-title">Hola, <span id="nombre-usuario-bienvenida">Paciente</span></h1>
+                <p class="main-subtitle">Bienvenido a tu panel de salud dental. Gestiona tus citas con total comodidad.</p>
+            </div>
+            
+            <div class="action-grid">
+                <div class="action-card primary-action" onclick="abrirSelectorTratamiento()">
+                    <div class="card-icon-wrapper">📅</div>
+                    <div class="card-body">
+                        <h3>Agendar Nueva Cita</h3>
+                        <p>Reserva un espacio en nuestra suite clínica de forma inmediata.</p>
+                    </div>
+                    <span class="arrow-indicator">→</span>
+                </div>
+                
+                <div class="action-card secondary-action" onclick="renderLista(); cambiarVista('lista')">
+                    <div class="card-icon-wrapper">📋</div>
+                    <div class="card-body">
+                        <h3>Mis Citas Agendadas</h3>
+                        <p>Consulta tus horarios, especialistas asignados y estados.</p>
+                    </div>
+                    <span class="arrow-indicator">→</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-tratamiento" class="view panel-card">
+            <div class="panel-header">
+                <button class="back-link" onclick="cambiarVista('menu')">← Volver al Panel</button>
+                <h2>¿Qué servicio necesitas hoy?</h2>
+                <p>Selecciona la especialidad para asignarte el consultorio y doctor correspondientes.</p>
+            </div>
+
+            <div class="timeline-steps">
+                <div class="t-step current"><span>1</span> Tratamiento</div>
+                <div class="t-line"></div>
+                <div class="t-step"><span>2</span> Fecha y Hora</div>
+            </div>
+
+            <div id="grid-tratamientos" class="treatments-list-layout">
+            </div>
+
+            <div class="panel-footer">
+                <button class="action-btn-submit" id="btn-continuar-trat" disabled onclick="confirmarTratamiento()">
+                    Continuar a Fecha y Hora →
+                </button>
+            </div>
+        </div>
+
+        <div id="view-agendar" class="view panel-card">
+            <div class="panel-header">
+                <button class="back-link" onclick="volverATratamiento()">← Modificar Servicio</button>
+                <h2 id="titulo-agendar">Planifica tu visita</h2>
+            </div>
+
+            <div class="timeline-steps">
+                <div class="t-step completed">✓ Tratamiento</div>
+                <div class="t-line active"></div>
+                <div class="t-step current"><span>2</span> Fecha y Hora</div>
+            </div>
+
+            <div class="selected-service-banner">
+                <div class="banner-badge" id="trat-icon-header">🦷</div>
+                <div class="banner-details">
+                    <h4 id="trat-nombre-header">Servicio</h4>
+                    <p>⏱ Duración estimada: <span id="trat-duracion-header">—</span> &nbsp;|&nbsp; 🩺 <span id="trat-doctor-header">—</span></p>
+                </div>
+            </div>
+
+            <div class="booking-form-grid">
+                <div class="field-box">
+                    <label for="fecha">Fecha de la Cita</label>
+                    <input type="date" id="fecha" name="fecha" onchange="actualizarAgenda()">
+                </div>
+                <div class="field-box">
+                    <label for="doc">Especialista Asignado</label>
+                    <select id="doc" name="doc" onchange="actualizarAgenda()" required>
+                        <option value="">Cargando especialistas...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="hours-section">
+                <label class="section-tag">Horarios Disponibles para esta fecha</label>
+                <div id="grid-horas" class="hours-flex-grid">
+                </div>
+            </div>
+
+            <input type="hidden" id="edit-id" value="">
+            <input type="hidden" id="hora-seleccionada">
+
+            <div class="panel-footer">
+                <button class="action-btn-submit success-theme" id="btn-save" onclick="finalizarAgendado()">
+                    Confirmar Reserva Médica
+                </button>
+            </div>
+        </div>
+
+        <div id="view-lista" class="view panel-card">
+            <div class="panel-header">
+                <button class="back-link" onclick="cambiarVista('menu')">← Volver al Panel</button>
+                <h2>Tus Citas Programadas</h2>
+                <p>Historial completo y control de asistencias activas en el sistema.</p>
+            </div>
+
+            <div id="lista-citas" class="appointments-vertical-stack">
+            </div>
+        </div>
+
+    </div>
+
+    <div class="smart-toast" id="toast">Operación exitosa</div>
+    <script src="agenda_cliente.js"></script>
+</body>
+</html>
