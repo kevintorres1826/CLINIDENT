@@ -107,6 +107,12 @@
                 >
 
                 <!-- NUEVO: Dropdown de filtro por estado -->
+
+
+
+
+
+
                 <div style="position:relative;">
                     <button
                         id="btnFiltroEstado"
@@ -126,8 +132,80 @@
                     </div>
                 </div>
 
+                <!-- Dropdown filtro por fecha -->
+                <div style="position:relative;">
+                    <button
+                        id="btnFiltroFecha"
+                        style="padding:10px 14px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:8px; white-space:nowrap;"
+                    >
+                        <span id="labelFiltroFecha">Todas las fechas</span>
+                        <span style="font-size:13px; opacity:0.7;">📅</span>
+                    </button>
+
+                    <div id="dropdownFecha" style="display:none; position:absolute; top:calc(100% + 6px); left:0; background:#1f1f1f; border:1px solid #555; border-radius:8px; z-index:200; width:300px; box-shadow:0 8px 24px rgba(0,0,0,0.5); padding:16px; box-sizing:border-box;">
+
+                        <!-- Tabs día exacto / rango -->
+                        <div style="display:flex; margin-bottom:14px; border-radius:6px; overflow:hidden; border:1px solid #555;">
+                            <button id="tabDia" onclick="cambiarTabFecha('dia')"
+                                style="flex:1; padding:8px; background:#2D8CF0; color:white; border:none; cursor:pointer; font-size:13px; font-weight:bold;">
+                                Día exacto
+                            </button>
+                            <button id="tabRango" onclick="cambiarTabFecha('rango')"
+                                style="flex:1; padding:8px; background:rgba(52,53,56,0.8); color:#aaa; border:none; cursor:pointer; font-size:13px;">
+                                Rango
+                            </button>
+                        </div>
+
+                        <!-- Panel día exacto -->
+                        <div id="panelDia">
+                            <label style="font-size:12px; color:#aaa; display:block; margin-bottom:6px;">Selecciona un día</label>
+                            <input
+                                type="date"
+                                id="inputDiaExacto"
+                                style="width:100%; padding:9px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; font-size:14px; box-sizing:border-box;"
+                            >
+                        </div>
+
+                        <!-- Panel rango -->
+                        <div id="panelRango" style="display:none;">
+                            <label style="font-size:12px; color:#aaa; display:block; margin-bottom:6px;">Fecha inicio</label>
+                            <input
+                                type="date"
+                                id="inputFechaInicio"
+                                style="width:100%; padding:9px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; font-size:14px; box-sizing:border-box; margin-bottom:10px;"
+                            >
+                            <label style="font-size:12px; color:#aaa; display:block; margin-bottom:6px;">Fecha fin</label>
+                            <input
+                                type="date"
+                                id="inputFechaFin"
+                                style="width:100%; padding:9px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; font-size:14px; box-sizing:border-box;"
+                            >
+                        </div>
+
+                        <!-- Botones aplicar / limpiar -->
+                        <div style="display:flex; gap:8px; margin-top:14px;">
+                            <button onclick="aplicarFiltroFecha()"
+                                style="flex:1; padding:9px; background:#2D8CF0; color:white; border:none; border-radius:5px; cursor:pointer; font-size:13px; font-weight:bold;">
+                                Aplicar
+                            </button>
+                            <button onclick="limpiarFiltroFecha()"
+                                style="flex:1; padding:9px; background:transparent; color:#aaa; border:1px solid #555; border-radius:5px; cursor:pointer; font-size:13px;">
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <button id="btnExcel" class="btn-exportar btn-excel">Exportar Excel</button>
                 <button id="btnPDF"   class="btn-exportar btn-pdf">Exportar PDF</button>
+
+
+
+
+
+
+
+
             </div>
 
             <table>
