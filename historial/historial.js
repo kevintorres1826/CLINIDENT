@@ -316,7 +316,7 @@ function dibujarGraficos() {
         rojo:    "rgba(248, 113, 113, 0.8)",
         morado:  "rgba(167, 139, 250, 0.8)",
     };
- 
+
     const opcionesBase = {
         responsive: true,
         plugins: { legend: { labels: { color: "white" } } },
@@ -325,14 +325,15 @@ function dibujarGraficos() {
             y: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" }, beginAtZero: true }
         }
     };
- 
+
     if (chartEdadInstancia)   chartEdadInstancia.destroy();
     if (chartEstadoInstancia) chartEstadoInstancia.destroy();
     if (chartFechaInstancia)  chartFechaInstancia.destroy();
- 
+
+    // --- Gráfico de Salas ---
     const conteoSala = {};
     pacientes.forEach(p => { conteoSala[p.sala] = (conteoSala[p.sala] || 0) + 1; });
- 
+
     chartEdadInstancia = new Chart(document.getElementById("graficoEdad"), {
         type: "bar",
         data: {
@@ -341,23 +342,63 @@ function dibujarGraficos() {
         },
         options: opcionesBase
     });
- 
-    const conteoEstado = { Atendido: 0, Pendiente: 0, Ausente: 0, Programada: 0, Completada: 0, Cancelada: 0, Reprogramada: 0, No_asistio: 0 };
-    pacientes.forEach(p => { if (conteoEstado[p.estado] !== undefined) conteoEstado[p.estado]++; });
- 
+
+    // --- Gráfico de Estado (CORREGIDO) ---
+    // Normalizar: contar dinámicamente todos los estados que lleguen desde la BD
+    const conteoEstado = {};
+    pacientes.forEach(p => {
+        const estado = p.estado || "sin estado";
+        conteoEstado[estado] = (conteoEstado[estado] || 0) + 1;
+    });
+
+    // Filtrar estados con al menos 1 cita para no mostrar segmentos vacíos
+    const estadosConDatos = Object.entries(conteoEstado).filter(([, v]) => v > 0);
+    const labelsEstado = estadosConDatos.map(([k]) => k);
+    const valoresEstado = estadosConDatos.map(([, v]) => v);
+
+    // Paleta de colores por nombre de estado (con fallback)
+    const colorPorEstado = {
+        "atendido":     colores.verde,
+        "pendiente":    colores.naranja,
+        "ausente":      colores.rojo,
+        "programada":   colores.azul,
+        "completada":   colores.verde,
+        "cancelada":    colores.rojo,
+        "reprogramada": colores.naranja,
+        "no_asistio":   colores.morado,
+        "sin estado":   "rgba(150,150,150,0.7)",
+    };
+    const bgEstado = labelsEstado.map(l => {
+        const estadoNormalizado = l.trim().toLowerCase();
+        return colorPorEstado[estadoNormalizado] || colores.azul;
+    });
+
     chartEstadoInstancia = new Chart(document.getElementById("graficoEstado"), {
         type: "doughnut",
         data: {
-            labels: Object.keys(conteoEstado),
-            datasets: [{ data: Object.values(conteoEstado), backgroundColor: [colores.verde, colores.naranja, colores.rojo, colores.azul, colores.verde, colores.rojo, colores.naranja, colores.morado], borderWidth: 0 }]
+            labels: labelsEstado,
+            datasets: [{ data: valoresEstado, backgroundColor: bgEstado, borderWidth: 0 }]
         },
-        options: { responsive: true, plugins: { legend: { labels: { color: "white" } } } }
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: "white" } },
+                // Mostrar mensaje si no hay datos
+                title: {
+                    display: valoresEstado.length === 0,
+                    text: "Sin datos disponibles",
+                    color: "#aaa",
+                    font: { size: 14 }
+                }
+            }
+        }
     });
- 
+
+    // --- Gráfico de Flujo por Fecha ---
     const porFecha = {};
     pacientes.forEach(p => { const f = p.fecha || "Sin fecha"; porFecha[f] = (porFecha[f] || 0) + 1; });
     const fechasOrdenadas = Object.keys(porFecha).sort();
- 
+
     chartFechaInstancia = new Chart(document.getElementById("graficoFecha"), {
         type: "line",
         data: {
