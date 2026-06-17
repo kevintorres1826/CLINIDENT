@@ -102,11 +102,32 @@
                 <input
                     type="text"
                     id="buscador"
-                    placeholder="Buscar por nombre o diagnóstico..."
+                    placeholder="Buscar por nombre, odontólogo o sala..."
                     style="flex:1; min-width:200px; padding:10px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; font-size:14px;"
                 >
+
+                <!-- NUEVO: Dropdown de filtro por estado -->
+                <div style="position:relative;">
+                    <button
+                        id="btnFiltroEstado"
+                        style="padding:10px 14px; background:rgba(52,53,56,0.8); color:white; border:1px solid #555; border-radius:5px; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:8px; white-space:nowrap;"
+                    >
+                        <span id="labelFiltroEstado">Todas las citas</span>
+                        <span style="font-size:11px; opacity:0.7;">▾</span>
+                    </button>
+
+                    <div id="dropdownEstado" style="display:none; position:absolute; top:calc(100% + 6px); left:0; background:#1f1f1f; border:1px solid #555; border-radius:8px; z-index:200; min-width:180px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                        <div class="opcion-estado" data-valor="todas"        style="padding:11px 16px; cursor:pointer; font-size:14px; color:white;">Todas las citas</div>
+                        <div class="opcion-estado" data-valor="Programada"   style="padding:11px 16px; cursor:pointer; font-size:14px; color:#60a5fa;">Programada</div>
+                        <div class="opcion-estado" data-valor="Completada"   style="padding:11px 16px; cursor:pointer; font-size:14px; color:#4ade80;">Completada</div>
+                        <div class="opcion-estado" data-valor="Cancelada"    style="padding:11px 16px; cursor:pointer; font-size:14px; color:#f87171;">Cancelada</div>
+                        <div class="opcion-estado" data-valor="Reprogramada" style="padding:11px 16px; cursor:pointer; font-size:14px; color:#facc15;">Reprogramada</div>
+                        <div class="opcion-estado" data-valor="No_asistio"   style="padding:11px 16px; cursor:pointer; font-size:14px; color:#fb923c;">No asistió</div>
+                    </div>
+                </div>
+
                 <button id="btnExcel" class="btn-exportar btn-excel">Exportar Excel</button>
-                <button id="btnPDF" class="btn-exportar btn-pdf">Exportar PDF</button>
+                <button id="btnPDF"   class="btn-exportar btn-pdf">Exportar PDF</button>
             </div>
 
             <table>

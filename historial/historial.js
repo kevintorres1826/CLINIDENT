@@ -7,33 +7,75 @@ let chartEdadInstancia = null;
 let chartEstadoInstancia = null;
 let chartFechaInstancia = null;
 
+let filtroEstadoActivo = "todas"; // Nueva variable global
+
 // URL Base del servidor Flask (Ajustar si usas otro puerto)
 const API_URL = 'http://127.0.0.1:5000';
 
 // --- INICIALIZADOR DE EVENTOS CUANDO CARGA EL DOM ---
 document.addEventListener("DOMContentLoaded", () => {
-    // Cargamos los datos reales del servidor inmediatamente al abrir el módulo
     cargarCitasDesdeServidor();
 
-    // Escucha para el buscador del historial
+    // Buscador
     const buscador = document.getElementById("buscador");
     if (buscador) {
         buscador.addEventListener("input", mostrarPacientes);
     }
 
-    // Escuchas para los botones del modal de eliminación (Si decides usarlos con Flask)
+    // Modales de eliminación
     const btnConfirmarEliminar = document.getElementById("btnConfirmarEliminar");
     if (btnConfirmarEliminar) btnConfirmarEliminar.addEventListener("click", confirmarEliminar);
 
     const btnCancelarEliminar = document.getElementById("btnCancelarEliminar");
     if (btnCancelarEliminar) btnCancelarEliminar.addEventListener("click", cerrarModalEliminar);
 
-    // Escuchas para los botones de exportación
+    // Exportaciones
     const btnExcel = document.getElementById("btnExcel");
     if (btnExcel) btnExcel.addEventListener("click", exportarExcel);
 
     const btnPDF = document.getElementById("btnPDF");
     if (btnPDF) btnPDF.addEventListener("click", exportarPDF);
+
+    // --- DROPDOWN FILTRO POR ESTADO ---
+    const btnFiltro   = document.getElementById("btnFiltroEstado");
+    const dropdown    = document.getElementById("dropdownEstado");
+    const labelFiltro = document.getElementById("labelFiltroEstado");
+
+    if (btnFiltro && dropdown) {
+
+        // Abrir / cerrar al hacer clic en el botón
+        btnFiltro.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const estaAbierto = dropdown.style.display === "block";
+            dropdown.style.display = estaAbierto ? "none" : "block";
+        });
+
+        // Evitar que un clic dentro del dropdown lo cierre
+        dropdown.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
+
+        // Cerrar si el usuario hace clic en cualquier otro lugar
+        document.addEventListener("click", () => {
+            dropdown.style.display = "none";
+        });
+
+        // Seleccionar una opción
+        document.querySelectorAll(".opcion-estado").forEach(opcion => {
+            opcion.addEventListener("click", () => {
+                filtroEstadoActivo = opcion.dataset.valor;
+
+                labelFiltro.textContent = opcion.textContent.trim();
+                labelFiltro.style.color = opcion.style.color;
+
+                document.querySelectorAll(".opcion-estado").forEach(o => o.classList.remove("activa-seleccion"));
+                opcion.classList.add("activa-seleccion");
+
+                dropdown.style.display = "none";
+                mostrarPacientes();
+            });
+        });
+    }
 });
 
 // --- CONEXIÓN CON EL BACKEND (FLASK) ---
@@ -129,12 +171,10 @@ function getBadge(estado) {
 // --- LÓGICA DEL HISTORIAL Y TABLAS ---
 function mostrarPacientes() {
     const busqueda = document.getElementById("buscador").value.toLowerCase();
-    const tabla = document.getElementById("tablaPacientes");
-    
-    // Indicador visual de carga
+    const tabla    = document.getElementById("tablaPacientes");
+
     tabla.innerHTML = `<tr><td colspan="8" style="color:#aaa; padding:20px;">Cargando historial desde el servidor...</td></tr>`;
 
-    // Conexión real al endpoint de Flask que creamos
     fetch('/historial_citas/todas')
         .then(response => {
             if (!response.ok) throw new Error("Error al obtener los datos del servidor");
@@ -143,19 +183,29 @@ function mostrarPacientes() {
         .then(citas => {
             tabla.innerHTML = "";
 
-            // Filtramos las citas por nombre de paciente, odontólogo o sala
-            const filtrados = citas.filter(c =>
-                c.paciente.toLowerCase().includes(busqueda) ||
-                c.odontologo.toLowerCase().includes(busqueda) ||
-                (c.sala || "").toLowerCase().includes(busqueda)
-            );
+            const filtrados = citas.filter(c => {
+                // Filtro de texto: nombre, odontólogo o sala
+                const coincideTexto =
+                    c.paciente.toLowerCase().includes(busqueda) ||
+                    c.odontologo.toLowerCase().includes(busqueda) ||
+                    (c.sala || "").toLowerCase().includes(busqueda);
+
+                // Filtro por estado: si es "todas" no restringe nada
+                const coincideEstado =
+                    filtroEstadoActivo === "todas" ||
+                    (c.estado || "").toLowerCase() === filtroEstadoActivo.toLowerCase();
+
+                return coincideTexto && coincideEstado;
+            });
 
             if (filtrados.length === 0) {
-                tabla.innerHTML = `<tr><td colspan="8" style="color:#aaa; padding:20px;">No se encontraron citas en el historial.</td></tr>`;
+                const msg = filtroEstadoActivo === "todas"
+                    ? "No se encontraron citas en el historial."
+                    : `No hay citas con estado <strong>${document.getElementById("labelFiltroEstado").textContent}</strong> que coincidan con la búsqueda.`;
+                tabla.innerHTML = `<tr><td colspan="8" style="color:#aaa; padding:20px;">${msg}</td></tr>`;
                 return;
             }
 
-            // Iteramos sobre las citas de la Base de Datos SQLite
             filtrados.forEach((c) => {
                 const fila = document.createElement("tr");
                 fila.innerHTML = `
@@ -163,11 +213,11 @@ function mostrarPacientes() {
                     <td>${c.odontologo}</td>
                     <td>${c.sala || "—"}</td>
                     <td>${c.fecha}</td>
-                    <td style="font-weight: bold; color: #4ade80;">${c.horario || "—"}</td>
+                    <td style="font-weight:bold; color:#4ade80;">${c.horario || "—"}</td>
                     <td>${c.servicio || "—"}</td>
                     <td>${getBadge(c.estado)}</td>
                     <td>
-                        <button class="btn-editar" onclick="verDetalleCita(${c.id_cita})" style="padding: 5px 10px; font-size: 12px;">👁️ Ver Detalle</button>
+                        <button class="btn-editar" onclick="verDetalleCita(${c.id_cita})" style="padding:5px 10px; font-size:12px;">👁️ Ver Detalle</button>
                     </td>
                 `;
                 tabla.appendChild(fila);
@@ -175,10 +225,9 @@ function mostrarPacientes() {
         })
         .catch(err => {
             console.error(err);
-            tabla.innerHTML = `<tr><td colspan="7" style="color:#f87171; padding:20px;">⚠️ Error al conectar con el servidor de citas.</td></tr>`;
+            tabla.innerHTML = `<tr><td colspan="8" style="color:#f87171; padding:20px;">⚠️ Error al conectar con el servidor de citas.</td></tr>`;
         });
 }
-
 // --- CONTROL DE DETALLE (Vinculado al endpoint dinámico de Flask) ---
 function verDetalleCita(idCita) {
     fetch(`${API_URL}/historial_citas/detalle/${idCita}`)
