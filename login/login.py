@@ -1,4 +1,5 @@
 
+
 import os
 import sys
 import time
@@ -53,6 +54,11 @@ def ejecutar_login():
             FROM tblusuario WHERE correo = ?
         """, [correo_input])
         usuario = cursor.fetchone()
+
+        # ── GUARDIA 1: Usuario inactivo → bloqueo inmediato, sin contar intentos ──
+        if usuario and usuario['estado'] != 'Activo':
+            return jsonify({'status': 'error', 'msg': '⚠️ Tu usuario clínico se encuentra inactivo.'})
+        # ────────────────────────────────────────────────────────────────────────
  
         # ── Credenciales incorrectas: contador de intentos ─────────────────
         if not usuario or pass_input != usuario['contrasena']:
@@ -75,9 +81,6 @@ def ejecutar_login():
                 'msg':    f'⚠️ Correo o contraseña incorrectos. Intentos restantes: {restantes}.'
             })
         # ──────────────────────────────────────────────────────────────────
- 
-        if usuario['estado'] != 'Activo':
-            return jsonify({'status': 'error', 'msg': '⚠️ Tu usuario clínico se encuentra inactivo.'})
  
         # ── ÉXITO: limpiar contadores ──────────────────────────────────────
         session.pop('intentos_fallidos', None)
