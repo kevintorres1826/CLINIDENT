@@ -391,6 +391,9 @@ function finishReg() {
   const nom = document.getElementById('r-nom').value.trim();
  
   if (cod === 'SENA4') {
+    // Limpiar sesión de pendiente en el backend
+    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
+    fetch(`${urlBase}/Registro/limpiar_pendiente`, { method: 'POST', credentials: 'include' }).catch(() => {});
     alert('🎉 ¡Cuenta creada exitosamente! Bienvenido a Clinident.');
     if (nom) localStorage.setItem('clinident_usuario_nombre', nom);
  

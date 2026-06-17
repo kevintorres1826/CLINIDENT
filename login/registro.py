@@ -3,7 +3,7 @@ import os
 import sys
 import sqlite3
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
  
 if getattr(sys, 'frozen', False):
     ruta_base = os.path.dirname(sys.executable)
@@ -146,6 +146,20 @@ def ejecutar_registro():
  
         # ── ESCENARIO A: correo real CON cuenta real → ya tiene cuenta ────────
         if por_correo and not _es_sin_cuenta(por_correo):
+            # Excepción: si este correo fue registrado en ESTA sesión y aún no verificó,
+            # el usuario retrocedió desde el paso 2 para reenviar el código.
+            pendiente = session.get('registro_pendiente_correo', '')
+            if pendiente and pendiente.lower() == email.lower():
+                # Actualizar datos por si los cambió al retroceder
+                cursor.execute(
+                    "UPDATE tblusuario SET contrasena = ?, nombre = ?, apellido = ?, telefono = ? WHERE correo = ?",
+                    [password, nombre, apellido, telefono or None, email]
+                )
+                conexion.commit()
+                return jsonify({
+                    'status': 'success',
+                    'msg': 'Código reenviado. Verifica tu correo.'
+                })
             return jsonify({
                 'status': 'error',
                 'msg': '⚠️ Este correo ya tiene una cuenta activa. Inicia sesión o usa "Recuperar cuenta".'
@@ -170,6 +184,7 @@ def ejecutar_registro():
                 [email, nombre, apellido, telefono or None, password, candidato['id_usuario']]
             )
             conexion.commit()
+            session['registro_pendiente_correo'] = email
             return jsonify({
                 'status': 'success',
                 'msg': '¡Cuenta activada! Encontramos tu registro en la clínica. Verifica con el código.'
@@ -197,6 +212,7 @@ def ejecutar_registro():
             [nombre, apellido, email, telefono or None, password]
         )
         conexion.commit()
+        session['registro_pendiente_correo'] = email
         return jsonify({
             'status': 'success',
             'msg': 'Cuenta creada con éxito en el sistema local.'
@@ -214,3 +230,9 @@ def ejecutar_registro():
     finally:
         if conexion:
             conexion.close()
+
+@registro_blueprint.route('/limpiar_pendiente', methods=['POST'])
+def limpiar_pendiente():
+    """Limpia la marca de registro pendiente de la sesión al finalizar con éxito."""
+    session.pop('registro_pendiente_correo', None)
+    return jsonify({'status': 'success'})

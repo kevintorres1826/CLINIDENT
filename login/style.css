@@ -390,7 +390,6 @@ body {
  
 .form-page {
   width: 50%;
-  padding: 40px 38px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -740,22 +739,29 @@ body {
  
 /* ── REGISTRO: SLIDER DE PASOS ── */
 /* ── REGISTRO: SLIDER DE PASOS ── */
+#reg-page {
+  overflow: hidden;
+  padding: 0 !important;
+}
+
 .reg-steps {
   display: flex;
   width: 200%;
-  overflow: hidden;
   transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.reg-steps.to-step2 {
-  transform: translateX(-50%);
 }
 
 .reg-step {
   width: 50%;
   min-width: 50%;
   flex-shrink: 0;
+  padding: 40px 38px;
+  box-sizing: border-box;
 }
+
+.reg-steps.to-step2 {
+  transform: translateX(-50%);
+}
+
 /* ── POLÍTICA ── */
 .policy {
   display: flex;
@@ -883,6 +889,7 @@ body {
  
   .form-page {
     padding: 28px 20px;
+    overflow: hidden;
   }
 }
 .floating-orbs{
@@ -953,3 +960,9 @@ body {
 .pass-hint.match   { color: #16a34a; }  /* verde  */
 .pass-hint.nomatch { color: #ef4444; }  /* rojo   */
  
+/* ── FIX DESBORDE PASO 2 EN MÓVIL ── */
+@media (max-width: 600px) {
+  .reg-step {
+    padding: 28px 20px;
+  }
+}

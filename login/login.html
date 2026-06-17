@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -93,7 +92,7 @@
         <div class="form-slider" id="slider">
  
           <!-- PÁGINA: LOGIN + RECUPERACIÓN -->
-          <div class="form-page" id="login-page">
+          <div class="form-page" id="login-page" style="padding: 40px 38px;">
  
             <!-- Tabs -->
             <div class="sub-tabs">
@@ -261,7 +260,10 @@
                 <h2 class="fh2" style="text-align:center">Confirma tu cuenta</h2>
                 <span class="fsub" style="text-align:center;display:block">Ingresa el código enviado a tu correo</span>
                 <input class="code-input" type="text" id="r-code" maxlength="5" placeholder="_ _ _ _ _">
-                <button class="btn-main shine-btn" green" onclick="finishReg()">Finalizar registro <i class="ti ti-check"></i></button>
+                <button class="btn-main shine-btn" onclick="finishReg()">Finalizar registro <i class="ti ti-check"></i></button>
+                <button class="back-btn" onclick="document.getElementById('reg-slider').classList.remove('to-step2'); document.getElementById('btn-reg').style.display='flex';">
+                  <i class="ti ti-arrow-left"></i> Volver al registro
+                </button>
               </div>
  
             </div>
@@ -269,19 +271,19 @@
  
         </div>
  
-        <!-- MODAL PRIVACIDAD -->
-        <div class="modal-wrap" id="modal">
-          <div class="modal-box">
-            <h3><i class="ti ti-shield-lock"></i> Política de datos</h3>
-            <h4>Finalidad del tratamiento</h4>
-            <p>Gestión de citas odontológicas, historias clínicas, seguimiento de tratamientos y cumplimiento de obligaciones legales en Colombia.</p>
-            <h4>Marco legal</h4>
-            <p>Cumplimiento de la <b>Ley 1581 de 2012</b> y el Decreto 1377 de 2013.</p>
-            <button class="btn-main shine-btn" style="margin-top:14px" onclick="closeModal()">Entendido <i class="ti ti-check"></i></button>
-          </div>
-        </div>
- 
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL PRIVACIDAD (fuera del card para no desbordar) -->
+  <div class="modal-wrap" id="modal">
+    <div class="modal-box">
+      <h3><i class="ti ti-shield-lock"></i> Política de datos</h3>
+      <h4>Finalidad del tratamiento</h4>
+      <p>Gestión de citas odontológicas, historias clínicas, seguimiento de tratamientos y cumplimiento de obligaciones legales en Colombia.</p>
+      <h4>Marco legal</h4>
+      <p>Cumplimiento de la <b>Ley 1581 de 2012</b> y el Decreto 1377 de 2013.</p>
+      <button class="btn-main shine-btn" style="margin-top:14px" onclick="closeModal()">Entendido <i class="ti ti-check"></i></button>
     </div>
   </div>
  
@@ -289,4 +291,3 @@
   <script src="app.js"></script>
 </body>
 </html>
- 
