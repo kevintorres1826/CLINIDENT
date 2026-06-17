@@ -1,3 +1,4 @@
+
 from flask import Blueprint, jsonify, session
 import sqlite3
 import os
@@ -110,7 +111,7 @@ def tratamientos_por_odontologo(id_odo):
         filas = cursor.fetchall()
         conn.close()
         return jsonify({"status": "success", "tratamientos": [dict(f) for f in filas]})
-
+ 
  
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -128,23 +129,23 @@ def registrar_factura():
         if campo not in data:
             return jsonify({"status": "error",
                             "message": f"Campo requerido faltante: {campo}"}), 400
-
+ 
     try:
         descuento   = float(data.get("descuento", 0))
         impuesto    = float(data.get("impuesto",  0))
         cobro_extra = float(data["cobro_extra"])
-
+ 
         conn = get_db()
         cursor = conn.cursor()
-
+ 
         # Precio base definido en el tipo de tratamiento
         cursor.execute("SELECT COALESCE(precio_base, 0) FROM tbltipotratamiento WHERE id_tipo = ?", (data["id_tipo"],))
         row = cursor.fetchone()
         precio_base = float(row[0]) if row else 0.0
-
+ 
         subtotal    = precio_base + cobro_extra
         valor_final = subtotal * (1 - descuento / 100) * (1 + impuesto / 100)
-
+ 
         cursor.execute("""
             INSERT INTO tbltratamiento (id_tipo, diagnostico, valor, cobro_extra, id_odontologo, id_usuario, id_cita)
             VALUES (?, ?, ?, ?, ?, ?, ?)

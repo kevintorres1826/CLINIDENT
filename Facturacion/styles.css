@@ -718,3 +718,70 @@ body::before {
   .btn-emitir { align-self: stretch; }
 }
  
+
+
+/* ══════════════════════════════════════
+   SECCIÓN EFECTIVO / CAMBIO
+══════════════════════════════════════ */
+#seccion-efectivo {
+  margin-top: 16px;
+  padding: 18px 20px;
+  background: rgba(16, 185, 129, .07);
+  border: 1px dashed rgba(16, 185, 129, .35);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: fadeInDown .25s ease;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#seccion-efectivo .field-group label {
+  color: #10b981;
+}
+
+#seccion-efectivo input[type="number"] {
+  border-color: rgba(16, 185, 129, .3);
+  background: rgba(16, 185, 129, .06);
+}
+#seccion-efectivo input[type="number"]:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, .15);
+  background: rgba(16, 185, 129, .09);
+}
+
+#seccion-efectivo .hint {
+  color: rgba(16, 185, 129, .65);
+}
+
+.cambio-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, .1);
+  border: 1px solid rgba(16, 185, 129, .2);
+  border-radius: 12px;
+}
+
+.cambio-display span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10b981;
+  letter-spacing: .2px;
+}
+
+#valor-cambio {
+  font-size: 20px;
+  font-weight: 800;
+  color: #10b981;
+  transition: color .2s;
+}
+
+#valor-cambio.insuficiente {
+  color: var(--red);
+}

@@ -1,5 +1,4 @@
 
-
 /* ══════════════════════════════════════════════════════
    CLINIDENT – Facturación / script.js
 ══════════════════════════════════════════════════════ */
@@ -59,7 +58,6 @@ function renderCitas(citas) {
   }
  
   contenedor.innerHTML = citas.map(c => {
-    // Mostrar el tratamiento agendado como badge si existe
     const badgeTratamiento = c.tratamiento
       ? `<span class="cita-tratamiento">💊 ${c.tratamiento}</span>`
       : '';
@@ -99,7 +97,6 @@ async function seleccionarCita(id) {
   citaSeleccionada = todasLasCitas.find(c => c.id_cita === id);
   if (!citaSeleccionada) return;
  
-  // Resumen superior
   document.getElementById('cita-resumen').innerHTML = `
     <div class="resumen-campo">
       <span class="resumen-label">Paciente</span>
@@ -120,13 +117,17 @@ async function seleccionarCita(id) {
   document.getElementById('estado-vacio').classList.add('oculto');
   document.getElementById('form-factura').classList.remove('oculto');
  
-  // Resetear campos de precio/descuento
   document.getElementById('diagnostico').value  = '';
   document.getElementById('precio-base').value  = '';
   document.getElementById('cobro-extra').value  = '';
+ 
+  /* Resetear sección efectivo al cambiar de cita */
+  document.getElementById('monto-recibido').value = '';
+  document.getElementById('valor-cambio').textContent = formatCOP(0);
+  document.getElementById('seccion-efectivo').style.display = 'none';
+ 
   calcularTotal();
  
-  // Cargar tratamientos del odontólogo → luego autoseleccionar
   await cargarTratamientos(citaSeleccionada.id_odontologo, citaSeleccionada.tratamiento);
 }
  
@@ -147,7 +148,6 @@ async function cargarTratamientos(idOdo, tratamientoAgendado) {
         `<option value="${t.id_tipo}" data-precio="${t.precio_base}">${t.nombre}</option>`
       ).join('');
  
-    // ── AUTOSELECCIÓN ─────────────────────────────────────────────────────
     if (tratamientoAgendado) {
       autoseleccionarTratamiento(select, tratamientoAgendado);
     }
@@ -158,23 +158,13 @@ async function cargarTratamientos(idOdo, tratamientoAgendado) {
   }
 }
  
-/**
- * Busca en el <select> la opción cuyo texto coincida mejor con
- * el tratamiento guardado al agendar la cita, y la selecciona.
- *
- * Estrategia (en orden de prioridad):
- *  1. Coincidencia exacta (case-insensitive)
- *  2. El valor del MAPA_TRATAMIENTO apunta a una subcadena del nombre del tipo
- *  3. El nombre del tipo contiene alguna palabra del tratamiento agendado
- */
 function autoseleccionarTratamiento(select, tratamientoAgendado) {
   const agendadoLower = tratamientoAgendado.toLowerCase().trim();
  
-  // Clave del mapa que puede estar asociada al texto guardado
-  const subcadenaMapeo = MAPA_TRATAMIENTO[tratamientoAgendado]        // clave exacta
+  const subcadenaMapeo = MAPA_TRATAMIENTO[tratamientoAgendado]
     ?? Object.entries(MAPA_TRATAMIENTO).find(([k]) =>
         agendadoLower.includes(k.toLowerCase())
-      )?.[1];                                                          // clave parcial
+      )?.[1];
  
   let mejorOpcion = null;
  
@@ -182,34 +172,27 @@ function autoseleccionarTratamiento(select, tratamientoAgendado) {
     if (!opt.value) continue;
     const nombreTipo = opt.textContent.toLowerCase().trim();
  
-    // Prioridad 1: texto exacto
     if (nombreTipo === agendadoLower) {
       mejorOpcion = opt;
       break;
     }
  
-    // Prioridad 2: el mapa indica que este tipo corresponde al tratamiento
     if (subcadenaMapeo && nombreTipo.includes(subcadenaMapeo)) {
       mejorOpcion = opt;
       break;
     }
  
-    // Prioridad 3: alguna palabra del tratamiento agendado aparece en el nombre del tipo
     if (!mejorOpcion) {
       const palabras = agendadoLower.split(/\s+/).filter(p => p.length > 3);
       if (palabras.some(p => nombreTipo.includes(p))) {
         mejorOpcion = opt;
-        // No hacemos break: puede aparecer una coincidencia mejor después
       }
     }
   }
  
   if (mejorOpcion) {
     select.value = mejorOpcion.value;
-    // Disparar el evento para que se autocomplete el precio
     actualizarPrecioReferencia();
- 
-    // Indicador visual de que fue autoseleccionado
     mostrarToast(`✨ Tratamiento autoseleccionado: ${mejorOpcion.textContent}`, 'ok');
   }
 }
@@ -228,24 +211,48 @@ function calcularTotal() {
   const base  = parseFloat(document.getElementById('precio-base').value)  || 0;
   const extra = parseFloat(document.getElementById('cobro-extra').value) || 0;
   
-  // 1. Calcular el subtotal primero
   const subtotal = base + extra;
   
-  // 2. Verificar si el checkbox de IVA está marcado
   const aplicarIva = document.getElementById('aplicar-iva').checked;
+  const tarifaIva  = aplicarIva ? 0.19 : 0;
+  const valorIva   = subtotal * tarifaIva;
   
-  // 3. Si está marcado es el 19%, si no, es 0
-  const tarifaIva = aplicarIva ? 0.19 : 0;
-  const valorIva = subtotal * tarifaIva;
-  
-  // 4. El total final incluye el impuesto
   const total = subtotal + valorIva;
   
-  // 5. Renderizar los valores formateados en la interfaz
   document.getElementById('prev-base').textContent  = formatCOP(base);
   document.getElementById('prev-extra').textContent = `+${formatCOP(extra)}`;
-  document.getElementById('prev-iva').textContent   = `+${formatCOP(valorIva)}`; // <- Nueva línea
+  document.getElementById('prev-iva').textContent   = `+${formatCOP(valorIva)}`;
   document.getElementById('prev-total').textContent = formatCOP(total);
+ 
+  /* Recalcular cambio si el método activo es efectivo */
+  calcularCambio();
+}
+ 
+/* ══ CAMBIO EN EFECTIVO ══════════════════════════════ */
+function calcularCambio() {
+  const base      = parseFloat(document.getElementById('precio-base').value) || 0;
+  const extra     = parseFloat(document.getElementById('cobro-extra').value) || 0;
+  const iva       = document.getElementById('aplicar-iva').checked ? 0.19 : 0;
+  const total     = (base + extra) * (1 + iva);
+
+  const recibido   = parseFloat(document.getElementById('monto-recibido').value) || 0;
+  const diferencia = recibido - total;
+
+  const elCambio = document.getElementById('valor-cambio');
+
+  if (recibido === 0) {
+    elCambio.textContent = formatCOP(0);
+    elCambio.classList.remove('insuficiente');
+    return;
+  }
+
+  if (diferencia < 0) {
+    elCambio.textContent = `⚠️ Faltan ${formatCOP(Math.abs(diferencia))}`;
+    elCambio.classList.add('insuficiente');
+  } else {
+    elCambio.textContent = formatCOP(diferencia);
+    elCambio.classList.remove('insuficiente');
+  }
 }
  
 /* ══ EMITIR FACTURA ═════════════════════════════════ */
@@ -257,13 +264,25 @@ async function emitirFactura() {
   const precioBase  = parseFloat(document.getElementById('precio-base').value) || 0;
   const cobroExtra  = parseFloat(document.getElementById('cobro-extra').value) || 0;
   const idMetodo    = parseInt(document.querySelector('input[name="metodo"]:checked').value);
-
-  // Agrega esta línea justo debajo de donde obtienes "idMetodo" en emitirFactura()
+ 
   const impuestoPorcentaje = document.getElementById('aplicar-iva').checked ? 19 : 0;
-
+ 
+  /* Datos de efectivo */
+  const esEfectivo    = idMetodo === 3;
+  const montoRecibido = esEfectivo
+    ? (parseFloat(document.getElementById('monto-recibido').value) || 0)
+    : null;
+  const valorIva   = (precioBase + cobroExtra) * (impuestoPorcentaje / 100);
+  const totalFinal = precioBase + cobroExtra + valorIva;
+  const cambio     = esEfectivo ? Math.max(0, montoRecibido - totalFinal) : null;
+ 
+  /* Validaciones */
   if (!idTipo)      { mostrarToast('⚠️ Selecciona un tipo de tratamiento', 'warn'); return; }
   if (!diagnostico) { mostrarToast('⚠️ Escribe el diagnóstico', 'warn'); return; }
-
+  if (esEfectivo && montoRecibido < totalFinal) {
+    mostrarToast('⚠️ El monto recibido es menor al total a pagar', 'warn'); return;
+  }
+ 
   const payload = {
     id_cita:        citaSeleccionada.id_cita,
     id_odontologo:  citaSeleccionada.id_odontologo,
@@ -272,7 +291,7 @@ async function emitirFactura() {
     diagnostico,
     cobro_extra:    cobroExtra,
     id_metodo_pago: idMetodo,
-    impuesto:       impuestoPorcentaje // <- LE PASAMOS EL 19 O EL 0 A PYTHON
+    impuesto:       impuestoPorcentaje
   };
  
   try {
@@ -287,23 +306,22 @@ async function emitirFactura() {
  
     const nombreTratamiento = document.getElementById('tipo-tratamiento')
       .options[document.getElementById('tipo-tratamiento').selectedIndex].text;
-    const total = precioBase + cobroExtra;
-    
-    const valorIva = (precioBase + cobroExtra) * (impuestoPorcentaje / 100);
     
     facturaActual = {
-      id_factura:  data.id_factura,
-      paciente:    citaSeleccionada.nombre_paciente,
-      odontologo:  citaSeleccionada.nombre_odontologo,
-      sala:        citaSeleccionada.nombre_sala,
-      fecha_cita:  citaSeleccionada.fecha,
-      tratamiento: nombreTratamiento,
+      id_factura:     data.id_factura,
+      paciente:       citaSeleccionada.nombre_paciente,
+      odontologo:     citaSeleccionada.nombre_odontologo,
+      sala:           citaSeleccionada.nombre_sala,
+      fecha_cita:     citaSeleccionada.fecha,
+      tratamiento:    nombreTratamiento,
       diagnostico,
-      precio_base: precioBase,
-      cobro_extra: cobroExtra,
-      iva:         valorIva, // 👈 ¡LISTO! Agregado para que no se pierda.
-      total:       precioBase + cobroExtra + valorIva, // <- Total con IVA incluido
-      metodo:      ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo]
+      precio_base:    precioBase,
+      cobro_extra:    cobroExtra,
+      iva:            valorIva,
+      total:          totalFinal,
+      metodo:         ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo],
+      monto_recibido: montoRecibido,
+      cambio:         cambio,
     };
  
     pagosLocales.push(facturaActual);
@@ -324,13 +342,13 @@ async function emitirFactura() {
 }
  
 /* ══ MODAL FACTURA ══════════════════════════════════ */
-/* ══ MODAL FACTURA DETALLADA (CORREGIDO PARA PRECIO BASE) ════════════════ */
 function mostrarFacturaModal(f) {
-  // Aseguramos compatibilidad: si no encuentra con guion bajo, busca en Mayúscula (o por defecto 0)
-  const pBase      = f.precio_base !== undefined ? f.precio_base : (f.precioBase || 0);
-  const cExtra     = f.cobro_extra !== undefined ? f.cobro_extra : (f.cobroExtra || 0);
-  const ivaFactura = f.iva         !== undefined ? f.iva         : (f.valorIva || 0);
-  
+  const pBase      = f.precio_base    !== undefined ? f.precio_base    : (f.precioBase || 0);
+  const cExtra     = f.cobro_extra    !== undefined ? f.cobro_extra    : (f.cobroExtra || 0);
+  const ivaFactura = f.iva            !== undefined ? f.iva            : (f.valorIva   || 0);
+  const recibido   = f.monto_recibido !== undefined ? f.monto_recibido : null;
+  const cambio     = f.cambio         !== undefined ? f.cambio         : null;
+
   document.getElementById('contenido-factura').innerHTML = `
     <div class="factura-header">
       <h2>CLINIDENT</h2>
@@ -345,7 +363,16 @@ function mostrarFacturaModal(f) {
       <div><strong>Fecha de emisión</strong><br>${new Date().toLocaleDateString('es-CO')}</div>
     </div>
     <table class="factura-tabla">
-      <thead><tr><th>Tratamiento</th><th>Diagnóstico</th><th>Precio base</th><th>Cobro extra</th><th>IVA (19%)</th><th>Total</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Tratamiento</th>
+          <th>Diagnóstico</th>
+          <th>Precio base</th>
+          <th>Cobro extra</th>
+          <th>IVA (19%)</th>
+          <th>Total</th>
+        </tr>
+      </thead>
       <tbody>
         <tr>
           <td>${f.tratamiento}</td>
@@ -358,6 +385,17 @@ function mostrarFacturaModal(f) {
       </tbody>
     </table>
     <div class="factura-total">TOTAL PAGADO: ${formatCOP(f.total)}</div>
+    ${recibido != null ? `
+    <div style="margin-top:12px; padding:14px 18px; background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.25); border-radius:12px; display:flex; flex-direction:column; gap:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:#10b981; font-weight:600;">💵 Monto recibido</span>
+        <span style="font-size:15px; color:#10b981; font-weight:700;">${formatCOP(recibido)}</span>
+      </div>
+      <div style="border-top:1px solid rgba(16,185,129,.2); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:#10b981; font-weight:600;">💰 Cambio a devolver</span>
+        <span style="font-size:18px; color:#10b981; font-weight:800;">${formatCOP(cambio)}</span>
+      </div>
+    </div>` : ''}
   `;
   document.getElementById('modal-factura').classList.add('visible');
 }
@@ -367,7 +405,6 @@ function cerrarModal() {
 }
  
 /* ══ HISTORIAL DE PAGOS ═════════════════════════════ */
-/* ══ HISTORIAL DE PAGOS (CORREGIDO) ══════════════ */
 function verPagos() {
   let html = `<h2 style="margin-bottom:4px">📂 Historial de facturas</h2>`;
   html += `<p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">💡 Haz clic en cualquier fila para ver el desglose completo de la factura.</p>`;
@@ -376,14 +413,29 @@ function verPagos() {
     html += `<p style="color:var(--muted)">No hay facturas registradas en esta sesión.</p>`;
   } else {
     html += `<table class="tabla-pagos">
-      <thead><tr><th>#</th><th>Paciente</th><th>Tratamiento</th><th>Total</th></tr></thead><tbody>`;
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Paciente</th>
+          <th>Tratamiento</th>
+          <th>Total</th>
+          <th>Método</th>
+          <th>Cambio</th>
+        </tr>
+      </thead>
+      <tbody>`;
     pagosLocales.forEach(p => {
+      const filaEfectivo = p.cambio != null
+        ? `<td style="color:#15803d; font-weight:600;">💵 ${formatCOP(p.cambio)}</td>`
+        : `<td style="color:var(--muted);">—</td>`;
       html += `
       <tr onclick="verFacturaHistorica(${p.id_factura})" style="cursor: pointer;" title="Haga clic para expandir factura">
         <td><strong>#${p.id_factura}</strong></td>
         <td>${p.paciente}</td>
         <td>${p.tratamiento}</td>
         <td>${formatCOP(p.total)}</td>
+        <td>${p.metodo || '—'}</td>
+        ${filaEfectivo}
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -391,9 +443,8 @@ function verPagos() {
  
   document.getElementById('contenido-pagos').innerHTML = html;
   
-  // ─── LÍNEAS DE CONTROL CORREGIDAS ───
   const modalPagos = document.getElementById('modal-pagos');
-  modalPagos.style.display = 'flex'; // 👈 CAMBIO AQUÍ: Fuerza visualmente al navegador a renderizarlo como Flex
+  modalPagos.style.display = 'flex';
   modalPagos.classList.add('visible');
 }
  
@@ -404,6 +455,17 @@ function inicializarMetodosPago() {
       document.querySelectorAll('.metodo-card').forEach(c => c.classList.remove('activo'));
       card.classList.add('activo');
       card.querySelector('input').checked = true;
+ 
+      /* Mostrar u ocultar sección de efectivo */
+      const esEfectivo = card.querySelector('input').value === '3';
+      const seccion    = document.getElementById('seccion-efectivo');
+      seccion.style.display = esEfectivo ? 'block' : 'none';
+ 
+      if (!esEfectivo) {
+        document.getElementById('monto-recibido').value  = '';
+        document.getElementById('valor-cambio').textContent = formatCOP(0);
+        document.getElementById('valor-cambio').style.color = '#15803d';
+      }
     });
   });
 }
@@ -443,15 +505,13 @@ function mostrarToast(msg, tipo = 'ok') {
   toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
 }
  
-
 function verFacturaHistorica(idFactura) {
   const facturaEnc = pagosLocales.find(p => p.id_factura === idFactura);
   if (facturaEnc) {
     const modalPagos = document.getElementById('modal-pagos');
     modalPagos.classList.remove('visible');
-    modalPagos.style.display = 'none'; // Se oculta temporalmente con seguridad
-    
-    // Abre el visor completo de la factura elegida
+    modalPagos.style.display = 'none';
     mostrarFacturaModal(facturaEnc);
   }
 }
+ 
