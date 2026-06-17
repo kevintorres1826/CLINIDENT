@@ -1,6 +1,8 @@
+import re
 import os
 import sys
 import sqlite3
+
 from flask import Blueprint, request, jsonify
  
 if getattr(sys, 'frozen', False):
@@ -60,17 +62,32 @@ def ejecutar_registro():
         telefono  = request.form.get('telefono',  '').strip()
         password  = request.form.get('password',  '')
         confirmar = request.form.get('confirmar', '')
- 
-    # ── Validaciones básicas ──────────────────────────────────────────────────
+
+    
     if not nombre or not apellido or not email or not password:
         return jsonify({'status': 'error', 'msg': 'Por favor completa todos los campos obligatorios.'})
- 
+
     if password != confirmar:
         return jsonify({'status': 'error', 'msg': '⚠️ Las contraseñas no coinciden. Verifícalas e intenta de nuevo.'})
- 
-    if len(password) < 6:
-        return jsonify({'status': 'error', 'msg': '⚠️ La contraseña debe tener al menos 6 caracteres.'})
- 
+
+    # ── Validación de Contraseña Segura ────────────────────────────────────────
+
+    # 1. Valida el tamaño
+    if len(password) < 8:
+        return jsonify({'status': 'error', 'msg': '⚠️ La contraseña falló: Debe tener al menos 8 caracteres.'})
+
+    # 2. Valida la mayúscula
+    if not re.search(r'[A-Z]', password):
+        return jsonify({'status': 'error', 'msg': '⚠️ La contraseña falló: Debe contener al menos una letra mayúscula.'})
+
+    # 3. Valida la minúscula
+    if not re.search(r'[a-z]', password):
+        return jsonify({'status': 'error', 'msg': '⚠️ La contraseña falló: Debe contener al menos una letra minúscula.'})
+
+    # 4. Valida el carácter especial
+    caracteres_especiales = r'[!"#$%&\'()*+,./:;<=>?@\[\\\]^_`{|}~-]'
+    if not re.search(caracteres_especiales, password):
+        return jsonify({'status': 'error', 'msg': '⚠️ La contraseña falló: Debe contener al menos un carácter especial.'})
     conexion = None
     try:
         conexion = sqlite3.connect(RUTA_BD)
@@ -197,4 +214,3 @@ def ejecutar_registro():
     finally:
         if conexion:
             conexion.close()
- 
