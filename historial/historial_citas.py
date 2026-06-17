@@ -34,17 +34,21 @@ def obtener_todas_citas():
             SELECT 
                 c.id_cita,
                 u_pac.nombre || ' ' || u_pac.apellido AS paciente,
-                u_od.nombre || ' ' || u_od.apellido AS odontologo,
+                u_od.nombre  || ' ' || u_od.apellido  AS odontologo,
                 s.nombre_sala AS sala,
                 c.fecha,
                 c.hora_inicio || ' - ' || c.hora_fin AS horario,
-                COALESCE(e.nombre_estado, 'sin estado') AS estado
+                COALESCE(e.nombre_estado, 'sin estado') AS estado,
+                COALESCE(tt.nombre, c.tratamiento, '—') AS servicio
             FROM tblcita c
             JOIN tblusuario u_pac ON u_pac.id_usuario = c.id_usuario
             JOIN tblusuario u_od  ON u_od.id_usuario  = c.id_odontologo
-            JOIN tblsala s        ON s.id_sala        = c.id_sala
-            LEFT JOIN tblagenda a      ON a.id_cita        = c.id_cita
-            LEFT JOIN tblestadocita e ON e.id_estado       = a.id_estado
+            JOIN tblsala s        ON s.id_sala         = c.id_sala
+            LEFT JOIN tblagenda          a   ON a.id_cita        = c.id_cita
+            LEFT JOIN tblestadocita      e   ON e.id_estado      = a.id_estado
+            LEFT JOIN tblhistorialclinico hc ON hc.id_cita       = c.id_cita
+            LEFT JOIN tbltratamiento      t  ON t.id_tratamiento = hc.id_tratamiento
+            LEFT JOIN tbltipotratamiento  tt ON tt.id_tipo       = t.id_tipo
             {filtro_usuario}
             ORDER BY c.fecha DESC, c.hora_inicio DESC
         """
@@ -60,7 +64,8 @@ def obtener_todas_citas():
                 "sala": fila[3],
                 "fecha": fila[4],
                 "horario": fila[5],
-                "estado": fila[6]
+                "estado": fila[6],
+                "servicio":   fila[7],
             })
             
         return jsonify(resultado)

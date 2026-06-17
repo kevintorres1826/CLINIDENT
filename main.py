@@ -193,13 +193,7 @@ def inicializar_base_de_datos():
         (1, 'Limpieza dental', 'Profilaxis y remoción de sarro y placa bacteriana', 80000.00),
         (2, 'Ortodoncia', 'Corrección de posición dental mediante brackets o alineadores', 150000.00),
         (3, 'Endodoncia', 'Tratamiento de conducto radicular', 350000.00),
-        (4, 'Blanqueamiento', 'Aclaramiento del esmalte dental', 0.00),
-        (5, 'Extracción', 'Remoción de diente o muela', 0.00),
-        (6, 'Implante dental', 'Implante de titanio con corona cerámica', 0.00),
-        (7, 'Resina', 'Restauración estética con resina compuesta', 0.00),
-        (8, 'Sellantes', 'Aplicación de sellantes de fisuras para prevención', 0.00),
-        (9, 'Prótesis', 'Diseño y colocación de prótesis dental removible o fija', 0.00),
-        (10, 'Cirugía oral', 'Extracción de muela del juicio u otras cirugías orales', 450000.00);
+        (4, 'Cirugía oral', 'Extracción de muela del juicio u otras cirugías orales', 450000.00);
  
         CREATE TABLE IF NOT EXISTS `tbltratamiento` (
           `id_tratamiento` INTEGER PRIMARY KEY AUTOINCREMENT,

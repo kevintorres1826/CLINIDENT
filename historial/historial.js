@@ -132,7 +132,7 @@ function mostrarPacientes() {
     const tabla = document.getElementById("tablaPacientes");
     
     // Indicador visual de carga
-    tabla.innerHTML = `<tr><td colspan="7" style="color:#aaa; padding:20px;">Cargando historial desde el servidor...</td></tr>`;
+    tabla.innerHTML = `<tr><td colspan="8" style="color:#aaa; padding:20px;">Cargando historial desde el servidor...</td></tr>`;
 
     // Conexión real al endpoint de Flask que creamos
     fetch('/historial_citas/todas')
@@ -151,7 +151,7 @@ function mostrarPacientes() {
             );
 
             if (filtrados.length === 0) {
-                tabla.innerHTML = `<tr><td colspan="7" style="color:#aaa; padding:20px;">No se encontraron citas en el historial.</td></tr>`;
+                tabla.innerHTML = `<tr><td colspan="8" style="color:#aaa; padding:20px;">No se encontraron citas en el historial.</td></tr>`;
                 return;
             }
 
@@ -164,6 +164,7 @@ function mostrarPacientes() {
                     <td>${c.sala || "—"}</td>
                     <td>${c.fecha}</td>
                     <td style="font-weight: bold; color: #4ade80;">${c.horario || "—"}</td>
+                    <td>${c.servicio || "—"}</td>
                     <td>${getBadge(c.estado)}</td>
                     <td>
                         <button class="btn-editar" onclick="verDetalleCita(${c.id_cita})" style="padding: 5px 10px; font-size: 12px;">👁️ Ver Detalle</button>
