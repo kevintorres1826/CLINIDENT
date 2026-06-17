@@ -19,12 +19,15 @@ agenda_blueprint = Blueprint('agenda_blueprint', __name__)
  
 def _migrar():
     conn = sqlite3.connect(RUTA_BD)
+
+    # ── Migración 1: columna 'tratamiento' en tblcita ──────────────────────
     try:
         conn.execute("ALTER TABLE tblcita ADD COLUMN tratamiento VARCHAR(100) DEFAULT NULL")
         conn.commit()
         print("✅ Migración: columna 'tratamiento' agregada a tblcita")
     except Exception:
         pass
+
     conn.execute("""
         UPDATE tblcita SET tratamiento = CASE
             WHEN id_sala = 4 THEN 'Cirugía Oral'
@@ -36,9 +39,18 @@ def _migrar():
         WHERE tratamiento IS NULL OR tratamiento = ''
     """)
     conn.commit()
+
+    # ── Migración 2: columna 'motivo_cancelacion' en tblagenda ─────────────
+    try:
+        conn.execute("ALTER TABLE tblagenda ADD COLUMN motivo_cancelacion TEXT DEFAULT NULL")
+        conn.commit()
+        print("✅ Migración: columna 'motivo_cancelacion' agregada a tblagenda")
+    except Exception:
+        pass
+
     conn.close()
- 
- 
+
+
 _migrar()
  
  
@@ -168,25 +180,41 @@ def acciones_get():
             cursor.execute("""
                 SELECT c.id_cita as id, c.fecha, c.hora_inicio as hora,
                        c.id_odontologo, c.id_sala,
-                       COALESCE(c.tratamiento, 'Revisión General') AS tratamiento
+                       COALESCE(c.tratamiento, 'Revisión General') AS tratamiento,
+                       COALESCE(a.id_estado, 1)                    AS id_estado,
+                       COALESCE(e.nombre_estado, 'programada')     AS nombre_estado
                 FROM tblcita c
-                LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
+                LEFT JOIN tblagenda      a ON c.id_cita  = a.id_cita
+                LEFT JOIN tblestadocita  e ON a.id_estado = e.id_estado
                 WHERE c.id_usuario = ?
-                  AND (a.id_estado IS NULL OR a.id_estado IN (1, 3))
-                ORDER BY c.fecha ASC, c.hora_inicio ASC
+                ORDER BY c.fecha DESC, c.hora_inicio DESC
             """, [id_usuario_sesion])
- 
+
+            ETIQUETAS = {
+                "programada":   ("🟢", "#10b981"),
+                "reprogramada": ("🔵", "#0052FF"),
+                "completada":   ("✅", "#6366f1"),
+                "cancelada":    ("🔴", "#ef4444"),
+                "no_asistio":   ("⚠️",  "#f59e0b"),
+            }
+
             res = []
             for c in cursor.fetchall():
                 hora_obj    = datetime.strptime(c['hora'], "%H:%M:%S")
                 nombre_trat = c['tratamiento']
+                estado_key  = c['nombre_estado'].lower().replace(" ", "_")
+                icono_estado, color_estado = ETIQUETAS.get(estado_key, ("🟢", "#10b981"))
                 res.append({
                     "id":               c['id'],
                     "tratamiento":      nombre_trat,
                     "tratamientoIcono": icono_para_tratamiento(nombre_trat),
                     "doctor":           obtener_nombre_doctor_js(c['id_odontologo']),
                     "fecha":            c['fecha'],
-                    "hora":             hora_obj.strftime("%I:%M %p")
+                    "hora":             hora_obj.strftime("%I:%M %p"),
+                    "id_estado":        c['id_estado'],
+                    "nombre_estado":    c['nombre_estado'],
+                    "icono_estado":     icono_estado,
+                    "color_estado":     color_estado,
                 })
             return jsonify({"status": "success", "data": res})
         except Exception as e:
@@ -253,16 +281,26 @@ def acciones_post():
  
         if action == 'cancelar_cita':
             id_cita = input_data.get('id_cita')
+            motivo  = input_data.get('motivo_cancelacion', '').strip()
+
             if not id_cita:
                 return jsonify({"status": "error", "message": "ID de cita requerido."})
- 
+            if not motivo:
+                return jsonify({"status": "error", "message": "Debes indicar el motivo de cancelación."})
+
             cursor.execute("SELECT COUNT(*) FROM tblagenda WHERE id_cita = ?", [id_cita])
             exists = cursor.fetchone()[0]
             if exists > 0:
-                cursor.execute("UPDATE tblagenda SET id_estado = 2 WHERE id_cita = ?", [id_cita])
+                cursor.execute(
+                    "UPDATE tblagenda SET id_estado = 2, motivo_cancelacion = ? WHERE id_cita = ?",
+                    [motivo, id_cita]
+                )
             else:
-                cursor.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, 2)", [id_cita])
- 
+                cursor.execute(
+                    "INSERT INTO tblagenda (id_cita, id_estado, motivo_cancelacion) VALUES (?, 2, ?)",
+                    [id_cita, motivo]
+                )
+
             conexion.commit()
             return jsonify({"status": "success", "message": "Cita cancelada con éxito."})
  

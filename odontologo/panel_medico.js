@@ -184,21 +184,20 @@ function cambiarTab(tab) {
 // ─── TODAS LAS CITAS ───
  
 function filtrarTodas(estado) {
-    // Actualizar botón activo
     ['todas', 'programada', 'completada', 'cancelada'].forEach(k => {
         const id = k === 'todas' ? 'f-todas' : `f-${k}`;
-        document.getElementById(id).classList.toggle('active', 
+        document.getElementById(id).classList.toggle('active',
             (estado === '' && k === 'todas') || estado === k
         );
     });
- 
+
     const lista = document.getElementById('lista-todas');
     lista.innerHTML = '<div class="empty-msg">Consultando base de datos...</div>';
- 
+
     const url = estado
         ? `${API_URL}/todas_citas?estado=${estado}`
         : `${API_URL}/todas_citas`;
- 
+
     fetch(url, { credentials: 'include' })
     .then(res => res.json())
     .then(data => {
@@ -206,28 +205,36 @@ function filtrarTodas(estado) {
             lista.innerHTML = `<div class="empty-msg">❌ Error: ${data.message}</div>`;
             return;
         }
- 
+
         const citas = data.citas;
- 
+
         if (citas.length === 0) {
             lista.innerHTML = '<div class="empty-msg">📭 No hay citas para este filtro.</div>';
             return;
         }
- 
+
         lista.innerHTML = citas.map(c => {
             const yaAtendido = c.estado === 'completada';
             const cancelada  = c.estado === 'cancelada';
- 
+
             let badgeClass = 'badge-programada';
             if (yaAtendido) badgeClass = 'badge-atendido';
             if (cancelada)  badgeClass = 'badge-cancelada';
- 
+
             let badgeLabel = '⏳ Pendiente';
             if (yaAtendido) badgeLabel = '✅ Atendido';
             if (cancelada)  badgeLabel = '❌ Cancelada';
- 
+
+            // ── Bloque de motivo (solo si está cancelada y tiene motivo) ──
+            const motivoHtml = (cancelada && c.motivo_cancelacion)
+                ? `<div class="motivo-cancelacion">
+                       <span class="motivo-label">💬 Motivo de cancelación:</span>
+                       <span class="motivo-texto">${c.motivo_cancelacion}</span>
+                   </div>`
+                : '';
+
             return `
-            <div class="cita-card">
+            <div class="cita-card ${cancelada ? 'cita-card-cancelada' : ''}">
                 <div class="cita-hora">${formatearHora(c.hora_inicio)}</div>
                 <div class="cita-info">
                     <div class="paciente">👤 ${c.paciente}</div>
@@ -236,6 +243,7 @@ function filtrarTodas(estado) {
                         &nbsp;|&nbsp;
                         🏥 ${c.nombre_sala}
                     </div>
+                    ${motivoHtml}
                 </div>
                 <span class="badge ${badgeClass}">${badgeLabel}</span>
                 <button class="btn-atender"

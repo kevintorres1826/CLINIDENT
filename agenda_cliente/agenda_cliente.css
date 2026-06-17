@@ -545,3 +545,16 @@ body::before{
     to   { transform: scale(1);   opacity: 1; }
 }
  
+
+
+/* ── TÍTULOS DE SECCIÓN EN EL HISTORIAL ── */
+.historial-seccion-titulo {
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    padding: 18px 4px 8px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 4px;
+}

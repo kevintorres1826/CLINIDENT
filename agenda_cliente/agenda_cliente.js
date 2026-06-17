@@ -291,7 +291,7 @@ function cerrarModalNotificacion() {
 function renderLista() {
     const contenedor = document.getElementById("lista-citas");
     contenedor.innerHTML = '<div class="empty-msg">Consultando base de datos central...</div>';
- 
+
     fetch(`${API_URL}?action=get_citas_usuario`)
         .then(res => res.json())
         .then(response => {
@@ -299,26 +299,63 @@ function renderLista() {
                 contenedor.innerHTML = "";
                 const citas = response.data;
                 if (citas.length === 0) {
-                    contenedor.innerHTML = '<div class="empty-msg">No registras citas médicas activas.</div>'; return;
+                    contenedor.innerHTML = '<div class="empty-msg">No registras citas médicas en el sistema.</div>';
+                    return;
                 }
-                citas.forEach(c => {
-                    const fPartes = c.fecha.split("-");
-                    const fechaLegible = fPartes.length === 3 ? `${fPartes[2]}/${fPartes[1]}/${fPartes[0]}` : c.fecha;
-                    const item = document.createElement("div");
-                    item.className = "report-item";
-                    item.innerHTML = `
-                        <div class="tcard-info">
-                            <div class="tcard-nombre">${c.tratamientoIcono} ${c.tratamiento}</div>
-                            <div class="tcard-desc" style="margin-top:4px;">Especialista: <strong>${c.doctor}</strong></div>
-                            <div class="tcard-duracion" style="margin-top:4px;color:var(--text-primary);">📅 ${fechaLegible} &nbsp;|&nbsp; ⏱ ${c.hora}</div>
-                        </div>
-                        <div class="actions-btns">
-                            <button class="btn-edit"        onclick="iniciarEdicion(${c.id})">Reprogramar</button>
-                            <button class="btn-cancel-cita" onclick="eliminarCita(${c.id})">Cancelar</button>
-                        </div>
-                    `;
-                    contenedor.appendChild(item);
-                });
+
+                // ── Separar citas activas e historial ────────────────────
+                const activas    = citas.filter(c => [1, 3].includes(c.id_estado));
+                const historial  = citas.filter(c => ![1, 3].includes(c.id_estado));
+
+                const renderGrupo = (lista, titulo) => {
+                    if (lista.length === 0) return;
+
+                    const encabezado = document.createElement("div");
+                    encabezado.className = "historial-seccion-titulo";
+                    encabezado.innerText = titulo;
+                    contenedor.appendChild(encabezado);
+
+                    lista.forEach(c => {
+                        const fPartes = c.fecha.split("-");
+                        const fechaLegible = fPartes.length === 3
+                            ? `${fPartes[2]}/${fPartes[1]}/${fPartes[0]}`
+                            : c.fecha;
+
+                        const esActiva = [1, 3].includes(c.id_estado);
+
+                        const item = document.createElement("div");
+                        item.className = "report-item";
+                        item.style.borderLeftColor = c.color_estado;
+
+                        item.innerHTML = `
+                            <div class="tcard-info">
+                                <div class="tcard-nombre">${c.tratamientoIcono} ${c.tratamiento}</div>
+                                <div class="tcard-desc" style="margin-top:4px;">
+                                    Especialista: <strong>${c.doctor}</strong>
+                                </div>
+                                <div class="tcard-duracion" style="margin-top:4px; color:var(--text-primary);">
+                                    📅 ${fechaLegible} &nbsp;|&nbsp; ⏱ ${c.hora}
+                                </div>
+                                <div style="margin-top:6px; font-size:0.8rem; font-weight:700;
+                                            color:${c.color_estado}; text-transform:uppercase;
+                                            letter-spacing:0.4px;">
+                                    ${c.icono_estado} ${c.nombre_estado}
+                                </div>
+                            </div>
+                            <div class="actions-btns">
+                                ${esActiva ? `
+                                    <button class="btn-edit"        onclick="iniciarEdicion(${c.id})">Reprogramar</button>
+                                    <button class="btn-cancel-cita" onclick="eliminarCita(${c.id})">Cancelar</button>
+                                ` : ''}
+                            </div>
+                        `;
+                        contenedor.appendChild(item);
+                    });
+                };
+
+                renderGrupo(activas,   "📅 Citas Activas");
+                renderGrupo(historial, "🗂️ Historial");
+
             } else {
                 contenedor.innerHTML = '<div class="empty-msg">Error al extraer el historial.</div>';
             }
@@ -349,15 +386,48 @@ function iniciarEdicion(idCita) {
 }
  
 function eliminarCita(idCita) {
-    if (!confirm("¿Seguro que deseas cancelar esta cita? El horario se liberará inmediatamente.")) return;
+    document.getElementById("modal-cancelacion-id").value = idCita;
+    document.getElementById("motivo-cancelacion-texto").value = "";
+    document.getElementById("modal-cancelacion-error").style.display = "none";
+    document.getElementById("modal-cancelacion").style.display = "flex";
+}
+
+function cerrarModalCancelacion() {
+    document.getElementById("modal-cancelacion").style.display = "none";
+}
+
+function confirmarCancelacion() {
+    const idCita = document.getElementById("modal-cancelacion-id").value;
+    const motivo = document.getElementById("motivo-cancelacion-texto").value.trim();
+    const errorEl = document.getElementById("modal-cancelacion-error");
+
+    if (!motivo) {
+        errorEl.style.display = "block";
+        errorEl.innerText = "⚠️ Por favor escribe el motivo antes de continuar.";
+        return;
+    }
+    if (motivo.length < 10) {
+        errorEl.style.display = "block";
+        errorEl.innerText = "⚠️ El motivo debe tener al menos 10 caracteres.";
+        return;
+    }
+
+    errorEl.style.display = "none";
+
     fetch(`${API_URL}?action=cancelar_cita`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_cita: idCita })
+        body: JSON.stringify({ id_cita: idCita, motivo_cancelacion: motivo })
     })
     .then(res => res.json())
     .then(data => {
-        if (data.status === "success") { mostrarToast("Cita cancelada correctamente."); renderLista(); }
+        cerrarModalCancelacion();
+        if (data.status === "success") {
+            mostrarToast("✅ Cita cancelada correctamente.");
+            renderLista();
+        } else {
+            mostrarToast("❌ " + data.message);
+        }
     })
     .catch(err => console.error(err));
 }

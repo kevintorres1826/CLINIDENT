@@ -76,7 +76,8 @@ def citas_por_fecha():
                    c.hora_fin,
                    u.nombre   || ' ' || u.apellido AS paciente,
                    s.nombre_sala,
-                   e.nombre_estado AS estado
+                   e.nombre_estado AS estado,
+                   a.motivo_cancelacion
             FROM   tblcita c
             JOIN   tblusuario  u ON u.id_usuario = c.id_usuario
             JOIN   tblsala     s ON s.id_sala    = c.id_sala
@@ -161,7 +162,8 @@ def todas_las_citas():
                    c.hora_fin,
                    u.nombre || ' ' || u.apellido AS paciente,
                    s.nombre_sala,
-                   COALESCE(e.nombre_estado, 'programada') AS estado
+                   COALESCE(e.nombre_estado, 'programada') AS estado,
+                   a.motivo_cancelacion
             FROM   tblcita c
             JOIN   tblusuario     u ON u.id_usuario = c.id_usuario
             JOIN   tblsala        s ON s.id_sala    = c.id_sala
