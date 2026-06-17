@@ -317,7 +317,8 @@ function doReg() {
   const tel   = document.getElementById('r-tel').value.trim();
   const pass  = document.getElementById('r-pass').value;
   const pass2 = document.getElementById('r-pass2').value;
- 
+
+  // ── 1. Validaciones Frontend (Rápidas) ──
   if (!nom || !ape || !email || !pass) {
     alert('⚠ Por favor rellena todos los campos obligatorios.');
     return;
@@ -327,38 +328,61 @@ function doReg() {
     document.getElementById('r-pass2').focus();
     return;
   }
-  if (pass.length < 6) {
-    alert('⚠ La contraseña debe tener al menos 6 caracteres.');
+  if (pass.length < 8) {
+    alert('⚠ La contraseña debe tener al menos 8 caracteres.');
     document.getElementById('r-pass').focus();
     return;
   }
- 
+  if (!/[A-Z]/.test(pass)) {
+    alert('⚠ La contraseña debe contener al menos una letra mayúscula.');
+    document.getElementById('r-pass').focus();
+    return;
+  }
+  if (!/[a-z]/.test(pass)) {
+    alert('⚠ La contraseña debe contener al menos una letra minúscula.');
+    document.getElementById('r-pass').focus();
+    return;
+  }
+  if (!/[!"#$%&'()*+,.\/:;<=>?@[\]\\^_`{|}~-]/.test(pass)) {
+    alert('⚠ La contraseña debe contener al menos un carácter especial.');
+    document.getElementById('r-pass').focus();
+    return;
+  }
+
+  // ── 2. Mostrar Loader ──
   document.getElementById('btn-reg').style.display   = 'none';
   document.getElementById('reg-loader').style.display = 'flex';
- 
+
   const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
- 
+
+  // ── 3. Petición al Backend (Python) ──
   fetch(`${urlBase}/Registro/registro`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nombre: nom, apellido: ape, email, telefono: tel, password: pass, confirmar: pass2 })
   })
-    .then(r => r.json())
+    .then(r => r.json()) // Lee el JSON UNA SOLA VEZ
     .then(d => {
+      // Ocultar Loader
       document.getElementById('reg-loader').style.display = 'none';
+
       if (d.status === 'success') {
+        // Todo perfecto: avanzamos de paso
         document.getElementById('r-code').value = '';
         document.getElementById('reg-slider').classList.add('to-step2');
       } else {
+        // Error de validación en Python (ej. faltan mayúsculas, correo duplicado, etc.)
         alert('⚠ ' + (d.message || d.msg));
         document.getElementById('btn-reg').style.display = 'flex';
       }
     })
-    .catch(() => {
+    .catch((error) => {
+      // Esto solo pasa si se cae el internet o Python falla gravemente
       document.getElementById('reg-loader').style.display = 'none';
       document.getElementById('btn-reg').style.display    = 'flex';
-      alert('❌ Error al enviar los datos.');
+      alert('❌ Error al enviar los datos. Revisa la conexión con el servidor.');
+      console.error(error);
     });
 }
  
@@ -395,4 +419,3 @@ function openModal() {
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
- 
