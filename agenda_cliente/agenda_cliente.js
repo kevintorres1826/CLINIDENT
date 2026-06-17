@@ -7,12 +7,35 @@ const API_URL = "/agenda_cliente/agenda_cliente";
 let ID_USUARIO_LOGUEADO = null;
  
 const TRATAMIENTOS = [
-    { id: "limpieza",    nombre: "Limpieza Dental",   desc: "Profilaxis profunda y eliminación de sarro bacteriano.",          duracion: "45 MIN",  doctor: "Dr. Alberto Casas (General)",       icono: "🦷" },
-    { id: "revision",    nombre: "Revisión General",  desc: "Evaluación integral de salud oral y diagnóstico.",               duracion: "30 MIN",  doctor: "Dr. Alberto Casas (General)",       icono: "🩺" },
-    { id: "ortodoncia",  nombre: "Ortodoncia",         desc: "Ajuste y control de aparatología o brackets.",                   duracion: "60 MIN",  doctor: "Dra. Elena Marín (Ortodoncia)",     icono: "😁" },
-    { id: "endodoncia",  nombre: "Endodoncia",         desc: "Tratamiento de conductos radiculares y alivio del dolor.",       duracion: "90 MIN",  doctor: "Dr. Camilo Ruiz (Cirugía)",         icono: "💉" },
-    { id: "cirugia",     nombre: "Cirugía Oral",       desc: "Extracciones complejas y procedimientos quirúrgicos.",           duracion: "120 MIN", doctor: "Dr. Camilo Ruiz (Cirugía)",         icono: "🔬" }
+    { id: "limpieza",    nombre: "Limpieza Dental",   desc: "Profilaxis profunda y eliminación de sarro bacteriano.",          duracion: "45 MIN",  doctor: "Dr. Alberto Casas (General)",       icono: "🦷", precio: 80000 },
+    { id: "revision",    nombre: "Revisión General",  desc: "Evaluación integral de salud oral y diagnóstico.",               duracion: "30 MIN",  doctor: "Dr. Alberto Casas (General)",       icono: "🩺", precio: 15000 },
+    { id: "ortodoncia",  nombre: "Ortodoncia",         desc: "Ajuste y control de aparatología o brackets.",                   duracion: "60 MIN",  doctor: "Dra. Elena Marín (Ortodoncia)",     icono: "😁", precio: 150000 },
+    { id: "endodoncia",  nombre: "Endodoncia",         desc: "Tratamiento de conductos radiculares y alivio del dolor.",       duracion: "90 MIN",  doctor: "Dr. Camilo Ruiz (Cirugía)",         icono: "💉", precio: 350000 },
+    { id: "cirugia",     nombre: "Cirugía Oral",       desc: "Extracciones complejas y procedimientos quirúrgicos.",           duracion: "120 MIN", doctor: "Dr. Camilo Ruiz (Cirugía)",         icono: "🔬", precio: 450000 }
 ];
+
+// Formatea un valor numérico como pesos colombianos (ej: 150000 -> "$150.000")
+function formatearPrecio(valor) {
+    return "$" + Number(valor).toLocaleString("es-CO");
+}
+
+// Trae los precios reales desde tbltipotratamiento y actualiza el array TRATAMIENTOS.
+// Los valores puestos arriba sirven de respaldo si esta petición falla.
+function cargarPreciosTratamientos() {
+    fetch(`${API_URL}?action=get_tratamientos`)
+        .then(res => res.json())
+        .then(response => {
+            if (response.status !== "success") return;
+            const precios = response.data; // { "Limpieza dental": 80000, ... }
+            TRATAMIENTOS.forEach(t => {
+                const match = Object.keys(precios).find(
+                    nombreBD => nombreBD.toLowerCase() === t.nombre.toLowerCase()
+                );
+                if (match) t.precio = precios[match];
+            });
+        })
+        .catch(err => console.error("Error al cargar precios de tratamientos:", err));
+}
  
 const HORARIOS_MAESTROS = [
     "08:00 AM", "08:45 AM", "09:30 AM", "10:15 AM", "11:00 AM", "11:45 AM",
@@ -68,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (btnVolverViejo) btnVolverViejo.style.display = "none";
  
                 cargarOdontologos();
+                cargarPreciosTratamientos();
             }
         })
         .catch(err => console.error("Error al obtener sesión:", err));
@@ -126,7 +150,10 @@ function abrirSelectorTratamiento() {
             <div class="tcard-info">
                 <div class="tcard-nombre">${t.nombre}</div>
                 <div class="tcard-desc">${t.desc}</div>
-                <div class="tcard-duracion">⏱ ${t.duracion}</div>
+                <div class="tcard-meta-row">
+                    <span class="tcard-duracion">⏱ ${t.duracion}</span>
+                    <span class="tcard-precio">${formatearPrecio(t.precio)}</span>
+                </div>
             </div>
             <div class="tcard-check" id="check-${t.id}">✓</div>
         `;
@@ -155,6 +182,7 @@ function confirmarTratamiento() {
     document.getElementById("trat-nombre-header").innerText = tratamientoSeleccionado.nombre;
     document.getElementById("trat-duracion-header").innerText = tratamientoSeleccionado.duracion;
     document.getElementById("trat-doctor-header").innerText = tratamientoSeleccionado.doctor;
+    document.getElementById("trat-precio-header").innerText = formatearPrecio(tratamientoSeleccionado.precio);
  
     const selectDoc = document.getElementById("doc");
     selectDoc.selectedIndex = 0;
@@ -322,6 +350,7 @@ function renderLista() {
                             : c.fecha;
 
                         const esActiva = [1, 3].includes(c.id_estado);
+                        const tInfo = TRATAMIENTOS.find(t => t.nombre === c.tratamiento);
 
                         const item = document.createElement("div");
                         item.className = "report-item";
@@ -336,6 +365,7 @@ function renderLista() {
                                 <div class="tcard-duracion" style="margin-top:4px; color:var(--text-primary);">
                                     📅 ${fechaLegible} &nbsp;|&nbsp; ⏱ ${c.hora}
                                 </div>
+                                ${tInfo ? `<div class="tcard-precio" style="margin-top:6px;">${formatearPrecio(tInfo.precio)}</div>` : ''}
                                 <div style="margin-top:6px; font-size:0.8rem; font-weight:700;
                                             color:${c.color_estado}; text-transform:uppercase;
                                             letter-spacing:0.4px;">
@@ -378,6 +408,7 @@ function iniciarEdicion(idCita) {
                 document.getElementById("trat-nombre-header").innerText = cita.tratamiento;
                 document.getElementById("trat-duracion-header").innerText = tratamientoSeleccionado.duracion;
                 document.getElementById("trat-doctor-header").innerText = cita.doctor;
+                document.getElementById("trat-precio-header").innerText = formatearPrecio(tratamientoSeleccionado.precio);
                 actualizarAgenda();
                 cambiarVista('agendar');
             }
@@ -451,4 +482,3 @@ function cerrarSesion() {
 function irAModoMedico() {
     window.location.href = '../odontologo/panel_medico.html';
 }
- 

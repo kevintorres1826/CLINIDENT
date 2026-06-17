@@ -6,4 +6,7 @@ TempPass101
 
 python -m PyInstaller --noconfirm --onefile --collect-all flask_cors --add-data "login;login" --add-data "agenda_cliente;agenda_cliente" --add-data "odontologo;odontologo" --add-data "recepcionista;recepcionista" --add-data "facturacion;facturacion" --add-data "historial;historial" --add-data "index.html;." --add-data "clinident.db;." main.py
 
+python -m PyInstaller --noconfirm --onefile --collect-all flask_cors --add-data "login;login" --add-data "agenda_cliente;agenda_cliente" --add-data "odontologo;odontologo" --add-data "recepcionista;recepcionista" --add-data "facturacion;facturacion" --add-data "historial;historial" --add-data "index.html;." --add-data "clinident.db;." main.py
+
+
 2026-07-23

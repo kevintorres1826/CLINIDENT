@@ -135,6 +135,23 @@ def acciones_get():
  
     elif action == 'get_odontologos':
         return jsonify({"status": "success", "data": obtener_odontologos_disponibles()})
+
+    elif action == 'get_tratamientos':
+        conexion = None
+        try:
+            conexion = sqlite3.connect(RUTA_BD)
+            conexion.row_factory = sqlite3.Row
+            cursor = conexion.cursor()
+            cursor.execute("""
+                SELECT nombre, COALESCE(precio_base, 0) AS precio_base
+                FROM tbltipotratamiento
+            """)
+            precios = {fila['nombre']: fila['precio_base'] for fila in cursor.fetchall()}
+            return jsonify({"status": "success", "data": precios})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)})
+        finally:
+            if conexion: conexion.close()
  
     elif action == 'get_citas_ocupadas':
         fecha     = request.args.get('fecha', '')
@@ -377,4 +394,3 @@ def acciones_post():
         return jsonify({"status": "error", "message": f"Error de DB: {str(e)}"})
     finally:
         if conexion: conexion.close()
- 
