@@ -377,6 +377,27 @@ def migrar_precio_base():
     conn.commit()
     conn.close()
     print("✅ Precios base sincronizados en tbltipotratamiento.")
+    
+def migrar_columna_tratamiento():
+    """Garantiza que tblcita tenga la columna 'tratamiento' y 'motivo_cancelacion'."""
+    conn = sqlite3.connect(RUTA_BD)
+    cursor = conn.cursor()
+    for tabla, columna, tipo in [
+        ("tblcita",   "tratamiento",       "VARCHAR(100) DEFAULT NULL"),
+        ("tblagenda", "motivo_cancelacion", "TEXT DEFAULT NULL"),
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE {tabla} ADD COLUMN {columna} {tipo}")
+            conn.commit()
+            print(f"✅ Migración: columna '{columna}' agregada a {tabla}")
+        except Exception:
+            pass  # Ya existe, no pasa nada
+    conn.close()
+
+# Ejecutamos la revisión y montaje de la BD antes de encender la aplicación
+inicializar_base_de_datos()
+migrar_precio_base()
+migrar_columna_tratamiento()   # ← agregar esta línea
 
 # Ejecutamos la revisión y montaje de la BD antes de encender la aplicación
 inicializar_base_de_datos()

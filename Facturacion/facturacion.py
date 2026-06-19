@@ -165,6 +165,12 @@ def registrar_factura():
             INSERT INTO tblpago (id_factura, id_metodo, pagado, fecha_pago)
             VALUES (?, ?, 1, date('now'))
         """, (id_factura, data["id_metodo_pago"]))
+        
+        # Después de insertar en tblpago:
+        cursor.execute("""
+            INSERT INTO tblhistorialclinico (id_tratamiento, id_cita, observaciones, fecha)
+            VALUES (?, ?, ?, date('now'))
+        """, (id_tratamiento, data["id_cita"], data["diagnostico"]))
  
         cursor.execute("UPDATE tblagenda SET id_estado = 4 WHERE id_cita = ?", (data["id_cita"],))
  

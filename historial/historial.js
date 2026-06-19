@@ -6,8 +6,8 @@ let chartEdadInstancia   = null;
 let chartEstadoInstancia = null;
 let chartFechaInstancia  = null;
  
-const API_URL = 'http://127.0.0.1:5000';
- 
+const API_URL = '';
+
 let filtroEstadoActivo = "todas";
 let filtroFecha        = { modo: "dia", diaExacto: null, inicio: null, fin: null };
 let tabFechaActiva     = "dia";
@@ -172,12 +172,17 @@ function getBadge(estado) {
     return `<span class="badge badge-secondary">${estado || 'sin estado'}</span>`;
 }
  
+function getBadgePago(estado) {
+    if (estado === "Pagado")  return `<span class="badge" style="background:rgba(20,60,30,0.8);color:#4ade80;">✅ Pagado</span>`;
+    if (estado === "—")       return `<span class="badge" style="background:rgba(50,50,50,0.8);color:#888;">— </span>`;
+    return `<span class="badge" style="background:rgba(80,60,10,0.8);color:#facc15;">⏳ Pendiente</span>`;
+}
 // --- LÓGICA DEL HISTORIAL Y TABLAS ---
 function mostrarPacientes() {
     const busqueda = document.getElementById("buscador").value.toLowerCase();
     const tabla    = document.getElementById("tablaPacientes");
  
-    tabla.innerHTML = `<tr><td colspan="8" style="color:#aaa; padding:20px;">Cargando historial desde el servidor...</td></tr>`;
+    tabla.innerHTML = `<tr><td colspan="7" style="color:#aaa; padding:20px;">Cargando historial desde el servidor...</td></tr>`;
  
     fetch(`${API_URL}/historial_citas/todas`, { credentials: 'include' })
         .then(response => {
@@ -230,9 +235,8 @@ function mostrarPacientes() {
                     <td style="font-weight:bold; color:#4ade80;">${c.horario || "—"}</td>
                     <td>${c.servicio || "—"}</td>
                     <td>${getBadge(c.estado)}</td>
-                    <td>
-                        <button class="btn-editar" onclick="verDetalleCita(${c.id_cita})" style="padding:5px 10px; font-size:12px;">👁️ Ver Detalle</button>
-                    </td>
+                    <td>${getBadgePago(c.estado_pago)}</td> 
+                    
                 `;
                 tabla.appendChild(fila);
             });
