@@ -1,15 +1,23 @@
+
 import os
 import sqlite3
 from flask import Blueprint, jsonify, session
-
+ 
 historial_citas_blueprint = Blueprint('historial_citas', __name__)
-
+ 
 def get_db():
     """ Conexión segura a la base de datos clinident.db """
     # Importamos RUTA_BD desde main para garantizar que use el mismo archivo portátil
     from main import RUTA_BD
     return sqlite3.connect(RUTA_BD)
-
+ 
+ 
+def _roles_sesion():
+    """Roles del usuario logueado, leídos de forma consistente con odontologo.py
+    (lista 'roles' en sesión, con fallback al id_rol legacy)."""
+    return set(session.get('roles', [session.get('id_rol', 0)]))
+ 
+ 
 # ── 1. GET /historial_citas/todas  →  Llena la tabla principal ───────────────
 @historial_citas_blueprint.route('/todas', methods=['GET'])
 def obtener_todas_citas():
@@ -18,7 +26,7 @@ def obtener_todas_citas():
     
     conn = get_db()
     try:
-        rol = session.get('id_rol')
+        roles = _roles_sesion()
         id_usuario = session.get('id_usuario')
         
         filtro_usuario = ""
@@ -26,7 +34,7 @@ def obtener_todas_citas():
         
         # Si NO es administrador(1), odontólogo(2) o recepcionista(3), es un paciente.
         # Por ende, solo debe ver sus propias citas en el historial.
-        if rol not in (1, 2, 3):
+        if not roles & {1, 2, 3}:
             filtro_usuario = " WHERE c.id_usuario = ?"
             parametros.append(id_usuario)
             
@@ -38,8 +46,8 @@ def obtener_todas_citas():
                 s.nombre_sala AS sala,
                 c.fecha,
                 c.hora_inicio || ' - ' || c.hora_fin AS horario,
-                COALESCE(e.nombre_estado, 'sin estado') AS estado,
-                COALESCE(tt.nombre, c.tratamiento, '—') AS servicio
+                COALESCE(e.nombre_estado, 'programada') AS estado,
+                COALESCE(tt.nombre, '—') AS servicio
             FROM tblcita c
             JOIN tblusuario u_pac ON u_pac.id_usuario = c.id_usuario
             JOIN tblusuario u_od  ON u_od.id_usuario  = c.id_odontologo
@@ -71,8 +79,8 @@ def obtener_todas_citas():
         return jsonify(resultado)
     finally:
         conn.close()
-
-
+ 
+ 
 # ── 2. GET /historial_citas/detalle/<id_cita>  →  Ventana modal de una cita ──
 @historial_citas_blueprint.route('/detalle/<int:id_cita>', methods=['GET'])
 def detalle_cita(id_cita):
@@ -81,16 +89,16 @@ def detalle_cita(id_cita):
  
     conn = get_db()
     try:
-        rol = session.get('id_rol')
+        roles = _roles_sesion()
         id_usuario = session.get('id_usuario')
-
+ 
         filtro_usuario = ""
         parametros = [id_cita]
         
-        if rol not in (1, 2, 3):
+        if not roles & {1, 2, 3}:
             filtro_usuario = " AND c.id_usuario = ?"
             parametros.append(id_usuario)
-
+ 
         # Datos principales de la cita
         cita = conn.execute(f"""
             SELECT
@@ -195,3 +203,4 @@ def detalle_cita(id_cita):
         return jsonify(resultado)
     finally:
         conn.close()
+ 

@@ -1,3 +1,4 @@
+
 import sqlite3
 from flask import Blueprint, jsonify, request, session
  
@@ -27,6 +28,16 @@ def verificar_odontologo():
         }), 403)
  
     return session['id_usuario'], None
+ 
+ 
+# ── MAPA DE ESTADOS VÁLIDOS QUE EL ODONTÓLOGO PUEDE ASIGNAR ───────────────────
+# id_estado según tblestadocita: 1=programada, 2=cancelada, 3=reprogramada,
+# 4=completada, 5=no_asistio
+ESTADOS_PERMITIDOS = {
+    "programada":  1,
+    "completada":  4,
+    "no_asistio":  5,
+}
  
  
 # ─────────────────────────────────────────────────────────────────────────────
@@ -76,7 +87,7 @@ def citas_por_fecha():
                    c.hora_fin,
                    u.nombre   || ' ' || u.apellido AS paciente,
                    s.nombre_sala,
-                   e.nombre_estado AS estado,
+                   COALESCE(e.nombre_estado, 'programada') AS estado,
                    a.motivo_cancelacion
             FROM   tblcita c
             JOIN   tblusuario  u ON u.id_usuario = c.id_usuario
@@ -103,13 +114,42 @@ def citas_por_fecha():
  
  
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. MARCAR CITA COMO COMPLETADA
+# 3. MARCAR CITA COMO COMPLETADA  (se mantiene por compatibilidad con el front
+#    existente; internamente delega en la misma lógica de cambio de estado)
 # ─────────────────────────────────────────────────────────────────────────────
 @odontologo_blueprint.route('/citas/<int:id_cita>/completar', methods=['PATCH'])
 def completar_cita(id_cita):
+    return _actualizar_estado_cita(id_cita, "completada")
+ 
+ 
+# ─────────────────────────────────────────────────────────────────────────────
+# 3-bis. CAMBIAR EL ESTADO DE UNA CITA (completada / no_asistio / programada)
+#    Body JSON esperado: { "estado": "completada" | "no_asistio" | "programada" }
+#    Permite revertir un estado anterior (p. ej. de "no_asistio" volver a
+#    "programada" si el odontólogo se equivocó al marcarla).
+# ─────────────────────────────────────────────────────────────────────────────
+@odontologo_blueprint.route('/citas/<int:id_cita>/estado', methods=['PATCH'])
+def cambiar_estado_cita(id_cita):
+    body = request.get_json(silent=True) or {}
+    estado = (body.get('estado') or '').strip().lower()
+ 
+    if estado not in ESTADOS_PERMITIDOS:
+        return jsonify({
+            "status": "error",
+            "message": f"Estado '{estado}' no es válido. Usa: {', '.join(ESTADOS_PERMITIDOS.keys())}"
+        }), 400
+ 
+    return _actualizar_estado_cita(id_cita, estado)
+ 
+ 
+def _actualizar_estado_cita(id_cita, estado):
+    """Lógica compartida: valida pertenencia de la cita al odontólogo logueado
+    y actualiza (o inserta) su registro en tblagenda con el id_estado correspondiente."""
     id_usuario, err = verificar_odontologo()
     if err:
         return err
+ 
+    id_estado = ESTADOS_PERMITIDOS[estado]
  
     conn = get_db()
     try:
@@ -129,14 +169,22 @@ def completar_cita(id_cita):
         ).fetchone()
  
         if en_agenda:
-            conn.execute("UPDATE tblagenda SET id_estado = 4 WHERE id_cita = ?", (id_cita,))
+            conn.execute("UPDATE tblagenda SET id_estado = ? WHERE id_cita = ?", (id_estado, id_cita))
         else:
-            conn.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, 4)", (id_cita,))
+            conn.execute("INSERT INTO tblagenda (id_cita, id_estado) VALUES (?, ?)", (id_cita, id_estado))
  
         conn.commit()
+ 
+        mensajes = {
+            "completada": f"Cita {id_cita} marcada como completada",
+            "no_asistio": f"Cita {id_cita} marcada como 'no asistió'",
+            "programada": f"Cita {id_cita} reactivada como programada",
+        }
+ 
         return jsonify({
             "status": "success",
-            "message": f"Cita {id_cita} marcada como completada"
+            "estado": estado,
+            "message": mensajes.get(estado, f"Cita {id_cita} actualizada a '{estado}'")
         })
     finally:
         conn.close()

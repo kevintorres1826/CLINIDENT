@@ -1,3 +1,4 @@
+
 const API_URL = "/odontologo";
  
 // ─── NAVEGACIÓN ENTRE VISTAS ───
@@ -57,7 +58,7 @@ function renderAgenda() {
  
         const citas = data.citas;
  
-        const pendientes = citas.filter(c => c.estado !== 'completada');
+        const pendientes = citas.filter(c => c.estado !== 'completada' && c.estado !== 'no_asistio');
         const atendidas  = citas.filter(c => c.estado === 'completada');
  
         document.getElementById('stat-total').innerText      = citas.length;
@@ -70,7 +71,6 @@ function renderAgenda() {
         }
  
         lista.innerHTML = citas.map(c => {
-            const yaAtendido = c.estado === 'completada';
             const horaFormato = formatearHora(c.hora_inicio);
             return `
             <div class="cita-card">
@@ -79,12 +79,10 @@ function renderAgenda() {
                     <div class="paciente">👤 ${c.paciente}</div>
                     <div class="detalle">🏥 ${c.nombre_sala} &nbsp;|&nbsp; 📅 ${formatFecha(c.fecha)}</div>
                 </div>
-                <span class="badge ${yaAtendido ? 'badge-atendido' : 'badge-pendiente'}">
-                    ${yaAtendido ? '✅ Atendido' : '⏳ Pendiente'}
-                </span>
-                <button class="btn-atender" onclick="marcarAtendido(${c.id_cita})" ${yaAtendido ? 'disabled' : ''}>
-                    ${yaAtendido ? 'Listo' : 'Marcar atendido'}
-                </button>
+                ${badgeEstado(c.estado)}
+                <div class="acciones-cita">
+                    ${botonesEstado(c.id_cita, c.estado, 'renderAgenda')}
+                </div>
             </div>`;
         }).join('');
     })
@@ -94,18 +92,73 @@ function renderAgenda() {
     });
 }
  
-// ─── MARCAR CITA COMO ATENDIDA ───
+// ─── BADGES Y BOTONES DE ESTADO (REUTILIZABLES) ───
  
-function marcarAtendido(idCita) {
-    fetch(`${API_URL}/citas/${idCita}/completar`, {
+function badgeEstado(estado) {
+    if (estado === 'completada') {
+        return `<span class="badge badge-atendido">✅ Atendido</span>`;
+    }
+    if (estado === 'no_asistio') {
+        return `<span class="badge badge-no-asistio">🚫 No asistió</span>`;
+    }
+    if (estado === 'cancelada') {
+        return `<span class="badge badge-cancelada">❌ Cancelada</span>`;
+    }
+    return `<span class="badge badge-pendiente">⏳ Pendiente</span>`;
+}
+ 
+// Genera los botones de acción según el estado actual de la cita.
+// callbackRecarga es el nombre (string) de la función a invocar tras el cambio,
+// ya que cada pestaña recarga su propia lista de forma distinta.
+function botonesEstado(idCita, estado, callbackRecarga, argExtra) {
+    const cancelada = estado === 'cancelada';
+    if (cancelada) {
+        // Una cita cancelada no se gestiona desde aquí
+        return `<button class="btn-atender" disabled>Cancelada</button>`;
+    }
+ 
+    const extra = argExtra !== undefined ? `, '${argExtra}'` : '';
+ 
+    if (estado === 'completada') {
+        // Ya atendida: permitir revertir a programada
+        return `
+            <button class="btn-atender btn-revertir" onclick="cambiarEstadoCita(${idCita}, 'programada', '${callbackRecarga}'${extra})">
+                ↩️ Revertir
+            </button>`;
+    }
+ 
+    if (estado === 'no_asistio') {
+        // No asistió: permitir revertir a programada
+        return `
+            <button class="btn-atender btn-revertir" onclick="cambiarEstadoCita(${idCita}, 'programada', '${callbackRecarga}'${extra})">
+                ↩️ Revertir
+            </button>`;
+    }
+ 
+    // Pendiente / programada: mostrar ambas acciones disponibles
+    return `
+        <button class="btn-atender" onclick="cambiarEstadoCita(${idCita}, 'completada', '${callbackRecarga}'${extra})">
+            ✅ Marcar atendido
+        </button>
+        <button class="btn-no-asistio" onclick="cambiarEstadoCita(${idCita}, 'no_asistio', '${callbackRecarga}'${extra})">
+            🚫 No asistió
+        </button>`;
+}
+ 
+// ─── CAMBIAR ESTADO DE UNA CITA (completar / no asistió / revertir) ───
+ 
+function cambiarEstadoCita(idCita, nuevoEstado, callbackRecarga, argExtra) {
+    fetch(`${API_URL}/citas/${idCita}/estado`, {
         method: 'PATCH',
-        credentials: 'include'
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado })
     })
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            mostrarToast('✅ Paciente marcado como atendido');
-            renderAgenda();
+            mostrarToast(mensajeToast(nuevoEstado));
+            recargar(callbackRecarga, argExtra);
         } else {
             mostrarToast('❌ ' + data.message);
         }
@@ -114,6 +167,21 @@ function marcarAtendido(idCita) {
         console.error(err);
         mostrarToast('❌ Error al conectar con el servidor.');
     });
+}
+ 
+function mensajeToast(estado) {
+    if (estado === 'completada') return '✅ Paciente marcado como atendido';
+    if (estado === 'no_asistio') return '🚫 Paciente marcado como "No asistió"';
+    if (estado === 'programada') return '↩️ Cita reactivada como programada';
+    return '✅ Cita actualizada';
+}
+ 
+function recargar(nombreFuncion, argExtra) {
+    if (nombreFuncion === 'renderAgenda') {
+        renderAgenda();
+    } else if (nombreFuncion === 'filtrarTodas') {
+        filtrarTodas(argExtra || '');
+    }
 }
  
 // ─── UTILIDAD: FORMATEAR HORA DE BD (HH:MM:SS → hh:MM AM/PM) ───
@@ -133,7 +201,7 @@ function mostrarToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
  
-
+ 
 // ─── CARGAR DATOS DEL PERFIL ───
 function cargarPerfilDoctor() {
     fetch(`${API_URL}/perfil`, {
@@ -160,8 +228,8 @@ function cargarPerfilDoctor() {
         mostrarToast("❌ Error al cargar los datos del doctor");
     });
 }
-
-
+ 
+ 
 // ─── INICIALIZACIÓN ───
 document.addEventListener('DOMContentLoaded', () => {
     cargarPerfilDoctor();
@@ -184,20 +252,22 @@ function cambiarTab(tab) {
 // ─── TODAS LAS CITAS ───
  
 function filtrarTodas(estado) {
-    ['todas', 'programada', 'completada', 'cancelada'].forEach(k => {
+    ['todas', 'programada', 'completada', 'cancelada', 'no_asistio'].forEach(k => {
         const id = k === 'todas' ? 'f-todas' : `f-${k}`;
-        document.getElementById(id).classList.toggle('active',
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('active',
             (estado === '' && k === 'todas') || estado === k
         );
     });
-
+ 
     const lista = document.getElementById('lista-todas');
     lista.innerHTML = '<div class="empty-msg">Consultando base de datos...</div>';
-
+ 
     const url = estado
         ? `${API_URL}/todas_citas?estado=${estado}`
         : `${API_URL}/todas_citas`;
-
+ 
     fetch(url, { credentials: 'include' })
     .then(res => res.json())
     .then(data => {
@@ -205,26 +275,17 @@ function filtrarTodas(estado) {
             lista.innerHTML = `<div class="empty-msg">❌ Error: ${data.message}</div>`;
             return;
         }
-
+ 
         const citas = data.citas;
-
+ 
         if (citas.length === 0) {
             lista.innerHTML = '<div class="empty-msg">📭 No hay citas para este filtro.</div>';
             return;
         }
-
+ 
         lista.innerHTML = citas.map(c => {
-            const yaAtendido = c.estado === 'completada';
-            const cancelada  = c.estado === 'cancelada';
-
-            let badgeClass = 'badge-programada';
-            if (yaAtendido) badgeClass = 'badge-atendido';
-            if (cancelada)  badgeClass = 'badge-cancelada';
-
-            let badgeLabel = '⏳ Pendiente';
-            if (yaAtendido) badgeLabel = '✅ Atendido';
-            if (cancelada)  badgeLabel = '❌ Cancelada';
-
+            const cancelada = c.estado === 'cancelada';
+ 
             // ── Bloque de motivo (solo si está cancelada y tiene motivo) ──
             const motivoHtml = (cancelada && c.motivo_cancelacion)
                 ? `<div class="motivo-cancelacion">
@@ -232,7 +293,7 @@ function filtrarTodas(estado) {
                        <span class="motivo-texto">${c.motivo_cancelacion}</span>
                    </div>`
                 : '';
-
+ 
             return `
             <div class="cita-card ${cancelada ? 'cita-card-cancelada' : ''}">
                 <div class="cita-hora">${formatearHora(c.hora_inicio)}</div>
@@ -245,12 +306,10 @@ function filtrarTodas(estado) {
                     </div>
                     ${motivoHtml}
                 </div>
-                <span class="badge ${badgeClass}">${badgeLabel}</span>
-                <button class="btn-atender"
-                    onclick="marcarAtendidoYRecargar(${c.id_cita}, '${estado}')"
-                    ${yaAtendido || cancelada ? 'disabled' : ''}>
-                    ${yaAtendido || cancelada ? 'Listo' : 'Marcar atendido'}
-                </button>
+                ${badgeEstado(c.estado)}
+                <div class="acciones-cita">
+                    ${botonesEstado(c.id_cita, c.estado, 'filtrarTodas', estado)}
+                </div>
             </div>`;
         }).join('');
     })
@@ -260,34 +319,16 @@ function filtrarTodas(estado) {
     });
 }
  
-// Marcar atendido desde la pestaña "Todas" y recargar con el filtro activo
-function marcarAtendidoYRecargar(idCita, estadoActual) {
-    fetch(`${API_URL}/citas/${idCita}/completar`, {
-        method: 'PATCH',
-        credentials: 'include'
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            mostrarToast('✅ Paciente marcado como atendido');
-            filtrarTodas(estadoActual);
-        } else {
-            mostrarToast('❌ ' + data.message);
-        }
-    })
-    .catch(() => mostrarToast('❌ Error al conectar con el servidor.'));
-}
-
 // ─── CAMBIO DE MÓDULO ───
 function irAModoPaciente() {
     // Redirecciona al panel de la agenda del cliente
     window.location.href = '../agenda_cliente/index.html';
 }
-
+ 
 // ─── CERRAR SESIÓN ABSOLUTO ───
 function cerrarSesionMedico() {
     if (!confirm("¿Estás seguro de que deseas cerrar tu sesión actual en CLINIDENT?")) return;
-
+ 
     // Petición al servidor Flask para destruir de raíz las cookies de sesión
     fetch('/logout', {
         method: 'POST',
@@ -308,3 +349,4 @@ function cerrarSesionMedico() {
         mostrarToast("❌ Error de conexión al cerrar sesión");
     });
 }
+ 

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,6 +6,47 @@
     <title>CLINIDENT | Panel Médico</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="panel_medico.css">
+    <style>
+        /* ─── Estilos añadidos para soportar el estado "No asistió" ───
+           Si panel_medico.css ya define clases equivalentes, estas reglas
+           solo complementan/sobreescriben lo necesario para el nuevo estado. */
+ 
+        .acciones-cita {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+ 
+        .btn-no-asistio {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-no-asistio:hover {
+            background: rgba(239, 68, 68, 0.22);
+        }
+ 
+        .btn-revertir {
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+        .btn-revertir:hover {
+            background: rgba(148, 163, 184, 0.22);
+        }
+ 
+        .badge-no-asistio {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
 </head>
 <body>
  
@@ -17,7 +59,7 @@
             <button class="btn-switch-module" onclick="irAModoPaciente()">
                 🦷 Vista Paciente
             </button>
-
+ 
             <button class="btn-logout-medico" onclick="cerrarSesionMedico()" title="Cerrar Sesión Completa">
                 🚪 Salir
             </button>
@@ -94,6 +136,7 @@
                     <button class="btn-filtro active" id="f-todas"       onclick="filtrarTodas('')">Todas</button>
                     <button class="btn-filtro"        id="f-programada"  onclick="filtrarTodas('programada')">⏳ Pendientes</button>
                     <button class="btn-filtro"        id="f-completada"  onclick="filtrarTodas('completada')">✅ Completadas</button>
+                    <button class="btn-filtro"        id="f-no_asistio"  onclick="filtrarTodas('no_asistio')">🚫 No asistió</button>
                     <button class="btn-filtro"        id="f-cancelada"   onclick="filtrarTodas('cancelada')">❌ Canceladas</button>
                 </div>
  
