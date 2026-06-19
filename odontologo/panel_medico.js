@@ -72,12 +72,22 @@ function renderAgenda() {
  
         lista.innerHTML = citas.map(c => {
             const horaFormato = formatearHora(c.hora_inicio);
+            const cancelada   = c.estado === 'cancelada';
+
+            const motivoHtml = (cancelada && c.motivo_cancelacion)
+                ? `<div class="motivo-cancelacion">
+                    <span class="motivo-label">💬 Motivo de cancelación:</span>
+                    <span class="motivo-texto">${c.motivo_cancelacion}</span>
+                </div>`
+                : '';
+
             return `
-            <div class="cita-card">
+            <div class="cita-card ${cancelada ? 'cita-card-cancelada' : ''}">
                 <div class="cita-hora">${horaFormato}</div>
                 <div class="cita-info">
                     <div class="paciente">👤 ${c.paciente}</div>
                     <div class="detalle">🏥 ${c.nombre_sala} &nbsp;|&nbsp; 📅 ${formatFecha(c.fecha)}</div>
+                    ${motivoHtml}
                 </div>
                 ${badgeEstado(c.estado)}
                 <div class="acciones-cita">
