@@ -8,7 +8,6 @@ const API = 'http://127.0.0.1:5000';
 let todasLasCitas    = [];
 let citaSeleccionada = null;
 let tratamientosOdo  = [];
-let pagosLocales     = JSON.parse(localStorage.getItem('pagos_clinident')) || [];
 let facturaActual    = null;
  
 /* ══ MAPA: texto del panel_rec → nombre en tbltipotratamiento ════════════
@@ -210,15 +209,15 @@ function actualizarPrecioReferencia() {
 function calcularTotal() {
   const base  = parseFloat(document.getElementById('precio-base').value)  || 0;
   const extra = parseFloat(document.getElementById('cobro-extra').value) || 0;
-  
+ 
   const subtotal = base + extra;
-  
+ 
   const aplicarIva = document.getElementById('aplicar-iva').checked;
   const tarifaIva  = aplicarIva ? 0.19 : 0;
   const valorIva   = subtotal * tarifaIva;
-  
+ 
   const total = subtotal + valorIva;
-  
+ 
   document.getElementById('prev-base').textContent  = formatCOP(base);
   document.getElementById('prev-extra').textContent = `+${formatCOP(extra)}`;
   document.getElementById('prev-iva').textContent   = `+${formatCOP(valorIva)}`;
@@ -234,18 +233,18 @@ function calcularCambio() {
   const extra     = parseFloat(document.getElementById('cobro-extra').value) || 0;
   const iva       = document.getElementById('aplicar-iva').checked ? 0.19 : 0;
   const total     = (base + extra) * (1 + iva);
-
+ 
   const recibido   = parseFloat(document.getElementById('monto-recibido').value) || 0;
   const diferencia = recibido - total;
-
+ 
   const elCambio = document.getElementById('valor-cambio');
-
+ 
   if (recibido === 0) {
     elCambio.textContent = formatCOP(0);
     elCambio.classList.remove('insuficiente');
     return;
   }
-
+ 
   if (diferencia < 0) {
     elCambio.textContent = `⚠️ Faltan ${formatCOP(Math.abs(diferencia))}`;
     elCambio.classList.add('insuficiente');
@@ -291,7 +290,9 @@ async function emitirFactura() {
     diagnostico,
     cobro_extra:    cobroExtra,
     id_metodo_pago: idMetodo,
-    impuesto:       impuestoPorcentaje
+    impuesto:       impuestoPorcentaje,
+    // ← NUEVO: se envía al backend para que quede guardado en tblpago, no solo en el navegador
+    monto_recibido: montoRecibido,
   };
  
   try {
@@ -306,26 +307,25 @@ async function emitirFactura() {
  
     const nombreTratamiento = document.getElementById('tipo-tratamiento')
       .options[document.getElementById('tipo-tratamiento').selectedIndex].text;
-    
-    facturaActual = {
-      id_factura:     data.id_factura,
-      paciente:       citaSeleccionada.nombre_paciente,
-      odontologo:     citaSeleccionada.nombre_odontologo,
-      sala:           citaSeleccionada.nombre_sala,
-      fecha_cita:     citaSeleccionada.fecha,
-      tratamiento:    nombreTratamiento,
-      diagnostico,
-      precio_base:    precioBase,
-      cobro_extra:    cobroExtra,
-      iva:            valorIva,
-      total:          totalFinal,
-      metodo:         ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo],
-      monto_recibido: montoRecibido,
-      cambio:         cambio,
-    };
  
-    pagosLocales.push(facturaActual);
-    localStorage.setItem('pagos_clinident', JSON.stringify(pagosLocales));
+    facturaActual = {
+      id_factura:        data.id_factura,
+      paciente:          citaSeleccionada.nombre_paciente,
+      telefono_paciente: citaSeleccionada.telefono_paciente || '—',  // ← NUEVO
+      correo_paciente:   citaSeleccionada.correo_paciente   || '—',  // ← NUEVO
+      odontologo:        citaSeleccionada.nombre_odontologo,
+      sala:              citaSeleccionada.nombre_sala,
+      fecha_cita:        citaSeleccionada.fecha,
+      tratamiento:       nombreTratamiento,
+      diagnostico,
+      precio_base:       precioBase,
+      cobro_extra:       cobroExtra,
+      iva:               valorIva,
+      total:             totalFinal,
+      metodo:            ['', 'Tarjeta débito/crédito', 'Transferencia bancaria', 'Efectivo'][idMetodo],
+      monto_recibido:    montoRecibido,
+      cambio:            cambio,
+    };
  
     mostrarFacturaModal(facturaActual);
     mostrarToast('✅ Factura registrada con éxito', 'ok');
@@ -346,8 +346,64 @@ function mostrarFacturaModal(f) {
   const pBase      = f.precio_base    !== undefined ? f.precio_base    : (f.precioBase || 0);
   const cExtra     = f.cobro_extra    !== undefined ? f.cobro_extra    : (f.cobroExtra || 0);
   const ivaFactura = f.iva            !== undefined ? f.iva            : (f.valorIva   || 0);
-  const recibido   = f.monto_recibido !== undefined ? f.monto_recibido : null;
-  const cambio     = f.cambio         !== undefined ? f.cambio         : null;
+  const recibido   = (f.monto_recibido !== undefined && f.monto_recibido !== null)
+                       ? parseFloat(f.monto_recibido) : null;
+  const cambio     = (f.cambio !== undefined && f.cambio !== null)
+                       ? parseFloat(f.cambio) : null;
+  const metodo     = f.metodo || '—';
+  const esEfectivo = recibido !== null;
+  const telefono   = f.telefono_paciente || '—';
+  const correo     = f.correo_paciente   || '—';
+
+  const ivaLabel     = ivaFactura > 0 ? 'IVA (19%)' : 'IVA';
+  const ivaValorText = ivaFactura > 0 ? formatCOP(ivaFactura) : 'No aplica';
+
+  let bloquePago = '';
+  if (esEfectivo) {
+    bloquePago = `
+      <div style="margin-top:14px; border:1px solid rgba(16,185,129,.3);
+                  border-radius:12px; overflow:hidden;">
+        <div style="background:rgba(16,185,129,.12); padding:10px 16px;
+                    font-size:12px; font-weight:700; color:#059669; letter-spacing:.04em;">
+          💵 DETALLE DEL PAGO EN EFECTIVO
+        </div>
+        <div style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:#6b7280;">Total a cobrar</span>
+            <span style="font-size:14px; font-weight:700; color:var(--text, #1f2937);">${formatCOP(f.total)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:#6b7280;">Monto recibido del paciente</span>
+            <span style="font-size:15px; font-weight:700; color:#059669;">${formatCOP(recibido)}</span>
+          </div>
+          <div style="border-top:1px solid rgba(16,185,129,.2); padding-top:10px;
+                      display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px; font-weight:700; color:#059669;">💰 Cambio a devolver</span>
+            <span style="font-size:20px; font-weight:800; color:#059669;">${formatCOP(cambio ?? 0)}</span>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    bloquePago = `
+      <div style="margin-top:14px; border:1px solid rgba(37,99,235,.25);
+                  border-radius:12px; overflow:hidden;">
+        <div style="background:rgba(37,99,235,.1); padding:10px 16px;
+                    font-size:12px; font-weight:700; color:#1d4ed8; letter-spacing:.04em;">
+          💳 DETALLE DEL PAGO
+        </div>
+        <div style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:#6b7280;">Método utilizado</span>
+            <span style="font-size:14px; font-weight:700; color:var(--text, #1f2937);">${metodo}</span>
+          </div>
+          <div style="border-top:1px solid rgba(37,99,235,.15); padding-top:10px;
+                      display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px; font-weight:700; color:#1d4ed8;">Total pagado</span>
+            <span style="font-size:20px; font-weight:800; color:#1d4ed8;">${formatCOP(f.total)}</span>
+          </div>
+        </div>
+      </div>`;
+  }
 
   document.getElementById('contenido-factura').innerHTML = `
     <div class="factura-header">
@@ -356,11 +412,13 @@ function mostrarFacturaModal(f) {
     </div>
     <div class="factura-grid">
       <div><strong>Paciente</strong><br>${f.paciente}</div>
+      <div><strong>Teléfono</strong><br>${telefono}</div>
+      <div><strong>Correo</strong><br>${correo}</div>
       <div><strong>Odontólogo</strong><br>${f.odontologo}</div>
       <div><strong>Fecha cita</strong><br>${formatFecha(f.fecha_cita)}</div>
-      <div><strong>Sala</strong><br>${f.sala}</div>
-      <div><strong>Método de pago</strong><br>${f.metodo}</div>
-      <div><strong>Fecha de emisión</strong><br>${new Date().toLocaleDateString('es-CO')}</div>
+      <div><strong>Sala</strong><br>${f.sala || '—'}</div>
+      <div><strong>Método de pago</strong><br>${metodo}</div>
+      <div><strong>Fecha de emisión</strong><br>${f.fecha_emision ? formatFecha(f.fecha_emision) : new Date().toLocaleDateString('es-CO')}</div>
     </div>
     <table class="factura-tabla">
       <thead>
@@ -369,7 +427,7 @@ function mostrarFacturaModal(f) {
           <th>Diagnóstico</th>
           <th>Precio base</th>
           <th>Cobro extra</th>
-          <th>IVA (19%)</th>
+          <th>${ivaLabel}</th>
           <th>Total</th>
         </tr>
       </thead>
@@ -379,23 +437,13 @@ function mostrarFacturaModal(f) {
           <td>${f.diagnostico || '—'}</td>
           <td>${formatCOP(pBase)}</td>
           <td>${formatCOP(cExtra)}</td>
-          <td>${formatCOP(ivaFactura)}</td>
+          <td>${ivaValorText}</td>
           <td>${formatCOP(f.total)}</td>
         </tr>
       </tbody>
     </table>
     <div class="factura-total">TOTAL PAGADO: ${formatCOP(f.total)}</div>
-    ${recibido != null ? `
-    <div style="margin-top:12px; padding:14px 18px; background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.25); border-radius:12px; display:flex; flex-direction:column; gap:8px;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:13px; color:#10b981; font-weight:600;">💵 Monto recibido</span>
-        <span style="font-size:15px; color:#10b981; font-weight:700;">${formatCOP(recibido)}</span>
-      </div>
-      <div style="border-top:1px solid rgba(16,185,129,.2); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:13px; color:#10b981; font-weight:600;">💰 Cambio a devolver</span>
-        <span style="font-size:18px; color:#10b981; font-weight:800;">${formatCOP(cambio)}</span>
-      </div>
-    </div>` : ''}
+    ${bloquePago}
   `;
   document.getElementById('modal-factura').classList.add('visible');
 }
@@ -404,18 +452,54 @@ function cerrarModal() {
   document.getElementById('modal-factura').classList.remove('visible');
 }
  
-/* ══ HISTORIAL DE PAGOS ═════════════════════════════ */
-function verPagos() {
-  let html = `<h2 style="margin-bottom:4px">📂 Historial de facturas</h2>`;
-  html += `<p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">💡 Haz clic en cualquier fila para ver el desglose completo de la factura.</p>`;
+/* ══ HISTORIAL DE PAGOS (GLOBAL, DESDE LA BASE DE DATOS) ═════════════════
+   Ya no usa localStorage: trae TODAS las facturas emitidas históricamente
+   por cualquier recepcionista, consultando directamente al backend. ══════ */
+let facturasHistorial = [];
  
-  if (pagosLocales.length === 0) {
-    html += `<p style="color:var(--muted)">No hay facturas registradas en esta sesión.</p>`;
+async function verPagos() {
+  const modalPagos = document.getElementById('modal-pagos');
+  modalPagos.style.display = 'flex';
+  modalPagos.classList.add('visible');
+ 
+  document.getElementById('contenido-pagos').innerHTML = `
+    <h2 style="margin-bottom:4px">📂 Historial de facturas</h2>
+    <div class="loading-state"><div class="spinner"></div><p>Cargando historial…</p></div>
+  `;
+ 
+  try {
+    const res  = await fetch(`${API}/facturacion/historial`, { credentials: 'include' });
+    const data = await res.json();
+    if (data.status !== 'success') throw new Error(data.message);
+ 
+    facturasHistorial = data.facturas;
+    renderHistorialPagos(facturasHistorial);
+ 
+  } catch (err) {
+    document.getElementById('contenido-pagos').innerHTML = `
+      <h2 style="margin-bottom:4px">📂 Historial de facturas</h2>
+      <div class="empty-list">
+        <p>⚠️ No se pudo cargar el historial.<br><small>${err.message}</small></p>
+        <button onclick="verPagos()" style="margin-top:12px;padding:8px 16px;border-radius:8px;
+          background:#2563eb;color:white;border:none;cursor:pointer;font-weight:600;">
+          Reintentar
+        </button>
+      </div>`;
+  }
+}
+ 
+function renderHistorialPagos(facturas) {
+  let html = `<h2 style="margin-bottom:4px">📂 Historial de facturas</h2>`;
+  html += `<p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">💡 Historial completo de todas las facturas emitidas en la clínica. Haz clic en cualquier fila para ver el desglose completo.</p>`;
+ 
+  if (facturas.length === 0) {
+    html += `<p style="color:var(--muted)">No hay facturas registradas todavía.</p>`;
   } else {
     html += `<table class="tabla-pagos">
       <thead>
         <tr>
           <th>#</th>
+          <th>Fecha emisión</th>
           <th>Paciente</th>
           <th>Tratamiento</th>
           <th>Total</th>
@@ -424,13 +508,14 @@ function verPagos() {
         </tr>
       </thead>
       <tbody>`;
-    pagosLocales.forEach(p => {
+    facturas.forEach(p => {
       const filaEfectivo = p.cambio != null
         ? `<td style="color:#15803d; font-weight:600;">💵 ${formatCOP(p.cambio)}</td>`
         : `<td style="color:var(--muted);">—</td>`;
       html += `
       <tr onclick="verFacturaHistorica(${p.id_factura})" style="cursor: pointer;" title="Haga clic para expandir factura">
         <td><strong>#${p.id_factura}</strong></td>
+        <td>${formatFecha(p.fecha_emision)}</td>
         <td>${p.paciente}</td>
         <td>${p.tratamiento}</td>
         <td>${formatCOP(p.total)}</td>
@@ -442,10 +527,6 @@ function verPagos() {
   }
  
   document.getElementById('contenido-pagos').innerHTML = html;
-  
-  const modalPagos = document.getElementById('modal-pagos');
-  modalPagos.style.display = 'flex';
-  modalPagos.classList.add('visible');
 }
  
 /* ══ MÉTODOS DE PAGO – UI ═══════════════════════════ */
@@ -506,7 +587,7 @@ function mostrarToast(msg, tipo = 'ok') {
 }
  
 function verFacturaHistorica(idFactura) {
-  const facturaEnc = pagosLocales.find(p => p.id_factura === idFactura);
+  const facturaEnc = facturasHistorial.find(p => p.id_factura === idFactura);
   if (facturaEnc) {
     const modalPagos = document.getElementById('modal-pagos');
     modalPagos.classList.remove('visible');
