@@ -1,3 +1,4 @@
+
 // ==========================================
 // ── VARIABLES GLOBALES ──
 // ==========================================
@@ -317,10 +318,15 @@ function doReg() {
   const tel   = document.getElementById('r-tel').value.trim();
   const pass  = document.getElementById('r-pass').value;
   const pass2 = document.getElementById('r-pass2').value;
-
+ 
   // ── 1. Validaciones Frontend (Rápidas) ──
   if (!nom || !ape || !email || !tel || !pass) {
     alert('⚠ Por favor rellena todos los campos obligatorios.');
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('⚠ El correo no tiene un formato válido (debe contener "@" y un dominio).');
+    document.getElementById('r-email').focus();
     return;
   }
   if (!/^\d{10}$/.test(tel)) {
@@ -353,13 +359,13 @@ function doReg() {
     document.getElementById('r-pass').focus();
     return;
   }
-
+ 
   // ── 2. Mostrar Loader ──
   document.getElementById('btn-reg').style.display   = 'none';
   document.getElementById('reg-loader').style.display = 'flex';
-
+ 
   const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
-
+ 
   // ── 3. Petición al Backend (Python) ──
   fetch(`${urlBase}/Registro/registro`, {
     method: 'POST',
@@ -371,9 +377,11 @@ function doReg() {
     .then(d => {
       // Ocultar Loader
       document.getElementById('reg-loader').style.display = 'none';
-
+ 
       if (d.status === 'success') {
-        // Todo perfecto: avanzamos de paso
+        // Todo perfecto: avanzamos de paso.
+        // IMPORTANTE: en este punto el backend NO ha guardado nada en la BD,
+        // solo dejó los datos pendientes en sesión. Falta verificar el código.
         document.getElementById('r-code').value = '';
         document.getElementById('reg-slider').classList.add('to-step2');
       } else {
@@ -392,29 +400,47 @@ function doReg() {
 }
  
 function finishReg() {
-  const cod = document.getElementById('r-code').value.toUpperCase().trim();
-  const nom = document.getElementById('r-nom').value.trim();
+  const cod   = document.getElementById('r-code').value.toUpperCase().trim();
+  const nom   = document.getElementById('r-nom').value.trim();
+  const email = document.getElementById('r-email').value.trim();
  
-  if (cod === 'SENA4') {
-    // Limpiar sesión de pendiente en el backend
-    const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
-    fetch(`${urlBase}/Registro/limpiar_pendiente`, { method: 'POST', credentials: 'include' }).catch(() => {});
-    alert('🎉 ¡Cuenta creada exitosamente! Bienvenido a Clinident.');
-    if (nom) localStorage.setItem('clinident_usuario_nombre', nom);
- 
-    ['r-nom', 'r-ape', 'r-email', 'r-tel', 'r-pass', 'r-pass2', 'r-code'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('pass-hint').textContent  = '';
-    document.getElementById('r-ok').checked           = false;
-    document.getElementById('btn-reg').disabled       = true;
-    document.getElementById('btn-reg').style.display  = 'flex';
-    document.getElementById('reg-slider').classList.remove('to-step2');
- 
-    window.location.href = '../agenda_cliente/index.html';
-  } else {
-    alert('❌ Código incorrecto. (Demo: SENA4)');
+  if (!cod) {
+    alert('⚠ Ingresa el código de verificación.');
+    return;
   }
+ 
+  const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
+ 
+  // La cuenta SOLO se crea en la base de datos si el backend confirma
+  // que el código es correcto. Hasta este punto, nada se ha guardado.
+  fetch(`${urlBase}/Registro/verificar`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, codigo: cod })
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'success') {
+        alert('🎉 ¡Cuenta creada exitosamente! Bienvenido a Clinident.');
+        if (nom) localStorage.setItem('clinident_usuario_nombre', nom);
+ 
+        ['r-nom', 'r-ape', 'r-email', 'r-tel', 'r-pass', 'r-pass2', 'r-code'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('pass-hint').textContent  = '';
+        document.getElementById('r-ok').checked           = false;
+        document.getElementById('btn-reg').disabled       = true;
+        document.getElementById('btn-reg').style.display  = 'flex';
+        document.getElementById('reg-slider').classList.remove('to-step2');
+ 
+        window.location.href = '../agenda_cliente/index.html';
+      } else {
+        // Código incorrecto o sesión pendiente vencida/inexistente
+        alert('❌ ' + (d.msg || d.message || 'Código incorrecto. (Demo: SENA4)'));
+      }
+    })
+    .catch(() => alert('❌ No se pudo conectar con el servidor.'));
 }
  
 // ==========================================
@@ -427,3 +453,4 @@ function openModal() {
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
+ 
