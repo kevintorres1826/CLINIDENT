@@ -319,8 +319,13 @@ function doReg() {
   const pass2 = document.getElementById('r-pass2').value;
 
   // ── 1. Validaciones Frontend (Rápidas) ──
-  if (!nom || !ape || !email || !pass) {
+  if (!nom || !ape || !email || !tel || !pass) {
     alert('⚠ Por favor rellena todos los campos obligatorios.');
+    return;
+  }
+  if (!/^\d{10}$/.test(tel)) {
+    alert('⚠ El celular debe tener exactamente 10 dígitos numéricos.');
+    document.getElementById('r-tel').focus();
     return;
   }
   if (pass !== pass2) {
