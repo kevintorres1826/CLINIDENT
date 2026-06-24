@@ -245,3 +245,42 @@ body::before {
     from { background-position: 0%; }
     to { background-position: 300%; }
 }
+
+
+.hours-flex-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.hora-slot {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: white;
+    color: #1e293b;
+}
+
+.hora-slot:hover {
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+}
+
+.hora-slot.selected {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+    color: white;
+}
+
+.hora-slot.occupied {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #cbd5e1;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}

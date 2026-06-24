@@ -48,17 +48,18 @@
         <div class="form-container">
             <h2>📅 Agendamiento de Citas</h2>
             <p class="form-subtitle">Seleccione el paciente de la lista o registre uno nuevo.</p>
-            
+
             <form id="form-agenda-recepcion">
-                
+
+                <!-- Paciente -->
                 <div class="form-group">
                     <label for="selector_paciente">Paciente</label>
                     <select id="selector_paciente" required>
                         <option value="">Cargando pacientes...</option>
                     </select>
                 </div>
- 
-                <!-- Datos del paciente nuevo: nombre, apellido y teléfono -->
+
+                <!-- Datos paciente nuevo -->
                 <div id="caja-nuevo-paciente" class="oculta">
                     <div class="row-inputs">
                         <div class="form-group">
@@ -72,53 +73,53 @@
                     </div>
                     <div class="form-group">
                         <label for="telefono">
-                            Teléfono <span style="color:#0ea5e9; font-size:0.8rem;">(permite vincular cuenta web futura)</span>
+                            Teléfono
+                            <span style="color:#0ea5e9; font-size:0.8rem;">
+                                (si ya tiene cuenta con este número, se vincula automáticamente)
+                            </span>
                         </label>
                         <input type="text" id="telefono" placeholder="Ej: 3001234567" maxlength="15">
                     </div>
                 </div>
- 
+
                 <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;">
- 
-                <div class="form-group">
-                    <label for="id_odontologo">Odontólogo / Especialista</label>
-                    <select id="id_odontologo" required>
-                        <option value="">Seleccione un especialista...</option>
-                    </select>
-                </div>
- 
+
+                <!-- Tratamiento -->
                 <div class="form-group">
                     <label for="tratamiento">Tratamiento Clínico</label>
                     <select id="tratamiento" required>
                         <option value="">Seleccione el procedimiento...</option>
-                        <option value="Limpieza Dental">Limpieza Dental</option>
-                        <option value="Revisión General">Revisión General</option>
-                        <option value="Ortodoncia">Ortodoncia (Control)</option>
-                        <option value="Endodoncia">Endodoncia</option>
-                        <option value="Cirugía Oral">Cirugía Oral</option>
+                        <option value="Limpieza Dental">🦷 Limpieza Dental (45 min)</option>
+                        <option value="Revisión General">🩺 Revisión General (30 min)</option>
+                        <option value="Ortodoncia">😁 Ortodoncia (60 min)</option>
+                        <option value="Endodoncia">💉 Endodoncia (90 min)</option>
+                        <option value="Cirugía Oral">🔬 Cirugía Oral (120 min)</option>
                     </select>
                 </div>
- 
-                <div class="row-inputs">
-                    <div class="form-group">
-                        <label for="fecha">Fecha de Cita</label>
-                        <input type="date" id="fecha" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="hora">Horario</label>
-                        <select id="hora" required>
-                            <option value="">Seleccione una hora...</option>
-                            <option value="08:00">08:00 AM</option>
-                            <option value="09:00">09:00 AM</option>
-                            <option value="10:00">10:00 AM</option>
-                            <option value="11:00">11:00 AM</option>
-                            <option value="14:00">02:00 PM</option>
-                            <option value="15:00">03:00 PM</option>
-                            <option value="16:00">04:00 PM</option>
-                        </select>
+
+                <!-- Especialistas disponibles para el tratamiento -->
+                <p id="info-doctor-asignado"
+                style="font-size:0.85rem; color:#0ea5e9; margin: 4px 0 16px 0; min-height:1.2em;"></p>
+
+                <!-- Fecha -->
+                <div class="form-group">
+                    <label for="fecha">Fecha de Cita</label>
+                    <input type="date" id="fecha" required>
+                </div>
+
+                <!-- Grid de slots horarios (reemplaza el select estático) -->
+                <div class="form-group">
+                    <label>Horarios Disponibles</label>
+                    <div id="grid-horas" class="hours-flex-grid">
+                        <p style="color:#94a3b8; font-size:0.9rem;">
+                            Selecciona tratamiento y fecha para ver disponibilidad.
+                        </p>
                     </div>
                 </div>
- 
+
+                <!-- Campo oculto con la hora elegida en formato "08:00 AM" -->
+                <input type="hidden" id="hora-seleccionada" value="">
+
                 <button type="submit" class="btn-submit">Confirmar y Registrar Cita</button>
             </form>
         </div>

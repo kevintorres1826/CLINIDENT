@@ -17,7 +17,6 @@ DB_PATH = os.path.join(BASE_DIR, "clinident.db")
 
 ROLES = {1: "Administrador", 2: "Odontólogo", 3: "Recepcionista", 4: "Paciente"}
 
-# id_tipo (tbltipotratamiento) -> nombre del servicio
 TRATAMIENTOS_ODONTOLOGO = {
     1: "Limpieza dental",
     2: "Ortodoncia",
@@ -37,32 +36,165 @@ class AdminApp(ctk.CTk):
         self.resizable(False, False)
         self.usuario_seleccionado_id = None
         self.configure(fg_color="#18181c")
-        self.mostrar_login_cinematico()
+        # Antes de mostrar login, verificar si existe al menos un admin
+        if self._hay_admin():
+            self.mostrar_login_cinematico()
+        else:
+            self.mostrar_crear_admin_emergencia()
 
+    # ── DB ───────────────────────────────────────────────────────────────────
     def conectar_db(self):
-        # timeout=15 -> si la BD está ocupada (locked) por otro proceso/conexión,
-        # espera hasta 15s reintentando en vez de fallar al instante (default: 5s).
         conn = sqlite3.connect(DB_PATH, timeout=15)
-        # WAL permite que lecturas y escrituras convivan mejor entre procesos
-        # (ej. este panel y el servidor Flask de main.py) reduciendo los locks.
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA busy_timeout=15000;")
         return conn
 
+    def _hay_admin(self):
+        """Devuelve True si existe al menos un usuario activo con rol 1."""
+        try:
+            conn = self.conectar_db()
+            cur  = conn.cursor()
+            cur.execute("""
+                SELECT 1 FROM tblusuario u
+                WHERE u.estado = 'Activo'
+                  AND (
+                      u.id_rol = 1
+                      OR EXISTS (
+                          SELECT 1 FROM tblusuario_rol ur
+                          WHERE ur.id_usuario = u.id_usuario AND ur.id_rol = 1
+                      )
+                  )
+                LIMIT 1
+            """)
+            existe = cur.fetchone() is not None
+            conn.close()
+            return existe
+        except sqlite3.Error:
+            return False
+
+    def _contar_admins(self):
+        """Devuelve cuántos administradores activos hay."""
+        try:
+            conn = self.conectar_db()
+            cur  = conn.cursor()
+            cur.execute("""
+                SELECT COUNT(DISTINCT u.id_usuario) FROM tblusuario u
+                WHERE u.estado = 'Activo'
+                  AND (
+                      u.id_rol = 1
+                      OR EXISTS (
+                          SELECT 1 FROM tblusuario_rol ur
+                          WHERE ur.id_usuario = u.id_usuario AND ur.id_rol = 1
+                      )
+                  )
+            """)
+            total = cur.fetchone()[0]
+            conn.close()
+            return total
+        except sqlite3.Error:
+            return 0
+
+    # ── CREAR ADMIN DE EMERGENCIA ─────────────────────────────────────────────
+    def mostrar_crear_admin_emergencia(self):
+        """
+        Pantalla de emergencia: se muestra ÚNICAMENTE cuando no existe
+        ningún administrador en la base de datos. Permite crear el primero.
+        """
+        self.frame_emergencia = ctk.CTkFrame(
+            self, width=500, height=600, corner_radius=24,
+            fg_color="#22222b", border_width=2, border_color="#ff6060"
+        )
+
+        ctk.CTkLabel(self.frame_emergencia, text="⚠️ SIN ADMINISTRADOR",
+                     font=("Segoe UI", 22, "bold"), text_color="#ff6060").pack(pady=(40, 4))
+        ctk.CTkLabel(self.frame_emergencia,
+                     text="No existe ningún administrador activo.\nCrea uno para continuar.",
+                     font=("Segoe UI", 13), text_color="#a0a0b0", justify="center").pack(pady=(0, 30))
+
+        def campo_em(placeholder, show=""):
+            e = ctk.CTkEntry(
+                self.frame_emergencia, placeholder_text=placeholder,
+                width=360, height=46, font=("Segoe UI", 13), corner_radius=10,
+                border_color="#3a3a4a", fg_color="#141419",
+                text_color="#ffffff", show=show
+            )
+            e.pack(pady=6)
+            return e
+
+        self.em_nombre   = campo_em("Nombre")
+        self.em_apellido = campo_em("Apellido")
+        self.em_email    = campo_em("Correo Electrónico")
+        self.em_telefono = campo_em("Teléfono (opcional)")
+        self.em_pass1    = campo_em("Contraseña (mín. 6 caracteres)", show="*")
+        self.em_pass2    = campo_em("Confirmar Contraseña", show="*")
+
+        ctk.CTkButton(
+            self.frame_emergencia, text="Crear Administrador",
+            command=self._guardar_admin_emergencia,
+            width=360, height=46, font=("Segoe UI", 14, "bold"), corner_radius=10,
+            fg_color="#ff6060", hover_color="#cc4444", text_color="#ffffff"
+        ).pack(pady=(24, 0))
+
+        self.frame_emergencia.place(relx=0.5, rely=0.5, anchor="center")
+
+    def _guardar_admin_emergencia(self):
+        nombre   = self.em_nombre.get().strip()
+        apellido = self.em_apellido.get().strip()
+        email    = self.em_email.get().strip()
+        telefono = self.em_telefono.get().strip() or None
+        p1       = self.em_pass1.get()
+        p2       = self.em_pass2.get()
+
+        if not nombre or not apellido or not email:
+            messagebox.showwarning("Requerido", "Nombre, Apellido y Correo son obligatorios.")
+            return
+        if not p1 or len(p1) < 6:
+            messagebox.showwarning("Contraseña", "La contraseña debe tener al menos 6 caracteres.")
+            return
+        if p1 != p2:
+            messagebox.showerror("Error", "Las contraseñas no coinciden.")
+            return
+
+        try:
+            conn   = self.conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON;")
+
+            cursor.execute("""
+                INSERT INTO tblusuario
+                    (id_rol, nombre, apellido, correo, telefono, contrasena, estado)
+                VALUES (1, ?, ?, ?, ?, ?, 'Activo')
+            """, (nombre, apellido, email, telefono, p1))
+            nuevo_id = cursor.lastrowid
+
+            cursor.execute(
+                "INSERT OR IGNORE INTO tblusuario_rol (id_usuario, id_rol) VALUES (?, 1)",
+                (nuevo_id,)
+            )
+
+            conn.commit()
+            conn.close()
+
+            messagebox.showinfo(
+                "Administrador Creado",
+                f"✅ Administrador '{nombre} {apellido}' creado correctamente.\n"
+                "Ahora puedes iniciar sesión."
+            )
+            self.frame_emergencia.destroy()
+            self.mostrar_login_cinematico()
+
+        except sqlite3.IntegrityError as e:
+            messagebox.showerror("Conflicto", f"El correo ya está registrado:\n{e}")
+        except sqlite3.Error as e:
+            messagebox.showerror("Error de BD", str(e))
+
     def asegurar_consultorio_para_doctor(self, cursor, id_odontologo):
-        """
-        Garantiza que el odontólogo tenga su propio consultorio asignado
-        en tblodontologo_sala. Si no lo tiene, crea un nuevo registro en
-        tblsala llamado "Consultorio N" (siguiente número disponible) y
-        lo vincula. Se llama justo al guardar, para no depender de un
-        reinicio del servidor Flask.
-        """
         cursor.execute(
             "SELECT id_sala FROM tblodontologo_sala WHERE id_odontologo = ?",
             (id_odontologo,)
         )
         if cursor.fetchone():
-            return  # Ya tiene consultorio, no hacer nada
+            return
 
         cursor.execute(
             "SELECT nombre_sala FROM tblsala WHERE nombre_sala LIKE 'Consultorio %'"
@@ -146,7 +278,6 @@ class AdminApp(ctk.CTk):
             messagebox.showwarning("Campos Vacíos", "Introduzca sus credenciales."); return
         try:
             conn = self.conectar_db(); cursor = conn.cursor()
-            # Admin: acepta quien tenga rol 1 en tblusuario_rol O en id_rol legacy
             cursor.execute("""
                 SELECT u.id_usuario, u.nombre
                 FROM tblusuario u
@@ -171,7 +302,6 @@ class AdminApp(ctk.CTk):
 
     # ── DASHBOARD ────────────────────────────────────────────────────────────
     def mostrar_dashboard_premium(self):
-        # Panel izquierdo — tabla
         self.frame_tabla = ctk.CTkFrame(self, width=700, height=670, corner_radius=20,
                                         fg_color="#1d1d24", border_width=1, border_color="#2a2a35")
         ctk.CTkLabel(self.frame_tabla, text="Consola de Control de Usuarios",
@@ -198,7 +328,6 @@ class AdminApp(ctk.CTk):
         self.tabla.pack(padx=20, pady=5, fill="both", expand=True)
         self.tabla.bind("<<TreeviewSelect>>", self.cargar_usuario_formulario)
 
-        # Panel derecho — formulario con canvas+scrollbar
         self.frame_form_outer = ctk.CTkFrame(self, width=530, height=670, corner_radius=20,
                                              fg_color="#1d1d24", border_width=1, border_color="#2a2a35")
         self._canvas = Canvas(self.frame_form_outer, bg="#1d1d24", highlightthickness=0,
@@ -218,7 +347,6 @@ class AdminApp(ctk.CTk):
         self._canvas.bind("<Leave>",
             lambda e: self._canvas.unbind_all("<MouseWheel>"))
 
-        # ── Widgets del formulario ────────────────────────────────────────
         def seccion(texto, parent=None):
             ctk.CTkLabel(parent or self.frame_form, text=texto, font=("Segoe UI", 12, "bold"),
                          text_color="#00cccc").pack(anchor="w", padx=16, pady=(14, 2))
@@ -253,12 +381,10 @@ class AdminApp(ctk.CTk):
         self.edit_pass1.bind("<KeyRelease>", self._check_pass_match)
         self.edit_pass2.bind("<KeyRelease>", self._check_pass_match)
 
-        # ── Roles: checkboxes múltiples ───────────────────────────────────
         seccion("▸ Roles Asignados  (puede marcar varios)")
         self.check_roles = {}
         for id_rol, nombre_rol in ROLES.items():
             var = ctk.BooleanVar(value=False)
-            # El checkbox de Odontólogo necesita disparar el panel de servicios
             if id_rol == ID_ROL_ODONTOLOGO:
                 cb = ctk.CTkCheckBox(self.frame_form, text=nombre_rol, variable=var,
                                      font=("Segoe UI", 13), text_color="#d0d0d5",
@@ -273,8 +399,6 @@ class AdminApp(ctk.CTk):
             cb.pack(anchor="w", padx=28, pady=3)
             self.check_roles[id_rol] = var
 
-        # ── NUEVO: panel de servicios para Odontólogo (oculto por defecto) ──
-        # Se muestra/oculta dinámicamente al marcar/desmarcar "Odontólogo".
         self.frame_servicios = ctk.CTkFrame(self.frame_form, fg_color="#141419",
                                             corner_radius=12, border_width=1,
                                             border_color="#2a2a35")
@@ -292,8 +416,6 @@ class AdminApp(ctk.CTk):
                                  checkmark_color="#141419", width=420)
             cb.pack(anchor="w", padx=32, pady=3)
             self.check_servicios[id_tipo] = var
-        # NOTA: self.frame_servicios todavía no se ha "packeado" — eso lo
-        # decide _toggle_panel_servicios() según el estado del checkbox.
 
         seccion("▸ Estado de la Cuenta")
         self.edit_estado = ctk.CTkOptionMenu(self.frame_form, values=["Activo", "Inactivo"],
@@ -318,26 +440,18 @@ class AdminApp(ctk.CTk):
         self.animar_panel_ease_out(self.frame_form_outer, destino_x=735, inicio_x=1400, y_fijo=25)
         self.animar_barra_y_cargar()
 
-    # ── NUEVO: mostrar / ocultar el panel de servicios ───────────────────────
+    # ── PANEL SERVICIOS ──────────────────────────────────────────────────────
     def _toggle_panel_servicios(self):
-        """
-        Muestra el bloque de checkboxes de servicios justo debajo de los
-        roles cuando se marca 'Odontólogo'; lo oculta (sin perder las
-        marcas internas) cuando se desmarca.
-        """
         if self.check_roles[ID_ROL_ODONTOLOGO].get():
-            # pack_forget() previo evita duplicar si ya estaba visible
             self.frame_servicios.pack_forget()
-            self.frame_servicios.pack(fill="x", padx=16, pady=(6, 4), after=self._ultimo_widget_roles())
+            self.frame_servicios.pack(fill="x", padx=16, pady=(6, 4),
+                                      after=self._ultimo_widget_roles())
         else:
             self.frame_servicios.pack_forget()
 
     def _ultimo_widget_roles(self):
-        """Devuelve el último checkbox de rol en el formulario, para anclar
-        el panel de servicios justo debajo de la lista de roles."""
         ids_ordenados = list(ROLES.keys())
         ultimo_id = ids_ordenados[-1]
-        # Buscamos el widget CTkCheckBox correspondiente recorriendo los hijos
         for widget in self.frame_form.winfo_children():
             if isinstance(widget, ctk.CTkCheckBox) and widget.cget("text") == ROLES[ultimo_id]:
                 return widget
@@ -367,7 +481,6 @@ class AdminApp(ctk.CTk):
         paso(0.0)
 
     def _roles_str(self, id_usuario, cursor):
-        """Devuelve string legible con los roles del usuario."""
         cursor.execute("""
             SELECT id_rol FROM tblusuario_rol WHERE id_usuario = ?
             UNION
@@ -413,7 +526,6 @@ class AdminApp(ctk.CTk):
             u = cursor.fetchone()
             if not u: conn.close(); return
 
-            # Obtener roles actuales
             cursor.execute("""
                 SELECT id_rol FROM tblusuario_rol WHERE id_usuario = ?
                 UNION
@@ -422,7 +534,6 @@ class AdminApp(ctk.CTk):
             """, (self.usuario_seleccionado_id, self.usuario_seleccionado_id))
             roles_actuales = {r[0] for r in cursor.fetchall()}
 
-            # ── NUEVO: obtener servicios actuales si es odontólogo ──────────
             cursor.execute("""
                 SELECT id_tipo FROM tblodontologo_servicio WHERE id_odontologo = ?
             """, (self.usuario_seleccionado_id,))
@@ -441,11 +552,9 @@ class AdminApp(ctk.CTk):
             self.edit_pass2.delete(0, "end")
             self.lbl_pass_hint.configure(text="")
 
-            # Marcar checkboxes según roles del usuario
             for id_rol, var in self.check_roles.items():
                 var.set(id_rol in roles_actuales)
 
-            # ── NUEVO: marcar checkboxes de servicios y mostrar/ocultar panel ──
             for id_tipo, var in self.check_servicios.items():
                 var.set(id_tipo in servicios_actuales)
             self._toggle_panel_servicios()
@@ -470,15 +579,25 @@ class AdminApp(ctk.CTk):
         if not nom or not ape or not email:
             messagebox.showwarning("Requerido", "Nombre, Apellido y Correo son obligatorios."); return
 
-        # Roles seleccionados
         roles_nuevos = [id_rol for id_rol, var in self.check_roles.items() if var.get()]
         if not roles_nuevos:
             messagebox.showwarning("Roles", "El usuario debe tener al menos un rol asignado."); return
-        # rol_principal = el más privilegiado (número más bajo: 1>2>3>4)
         rol_principal = min(roles_nuevos)
 
-        # ── NUEVO: validar servicios si el usuario es Odontólogo ────────────
-        es_odontologo = ID_ROL_ODONTOLOGO in roles_nuevos
+        # ── Protección: no quitar rol admin si es el último ───────────────
+        # Se verifica ANTES de guardar: si el usuario actualmente ES admin
+        # y lo estamos quitando de ese rol, y solo hay 1 admin total, bloquear.
+        es_admin_actualmente = self._usuario_es_admin(self.usuario_seleccionado_id)
+        quitando_admin       = es_admin_actualmente and (1 not in roles_nuevos)
+        if quitando_admin and self._contar_admins() <= 1:
+            messagebox.showerror(
+                "Operación Bloqueada",
+                "No puedes quitar el rol de Administrador a este usuario porque es el único "
+                "administrador activo del sistema.\n\nAsigna primero otro administrador."
+            )
+            return
+
+        es_odontologo    = ID_ROL_ODONTOLOGO in roles_nuevos
         servicios_nuevos = []
         if es_odontologo:
             servicios_nuevos = [id_tipo for id_tipo, var in self.check_servicios.items() if var.get()]
@@ -489,7 +608,6 @@ class AdminApp(ctk.CTk):
                 )
                 return
 
-        # Contraseña
         p1, p2 = self.edit_pass1.get(), self.edit_pass2.get()
         nueva_pass = None
         if p1 or p2:
@@ -502,9 +620,6 @@ class AdminApp(ctk.CTk):
         try:
             conn = self.conectar_db(); cursor = conn.cursor()
             cursor.execute("PRAGMA foreign_keys = ON;")
-
-            # Asegurar que la tabla exista (por si el panel admin se usa
-            # antes de que app.py haya corrido sus migraciones alguna vez)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS tblodontologo_sala (
                     id_odontologo INTEGER NOT NULL PRIMARY KEY,
@@ -514,34 +629,27 @@ class AdminApp(ctk.CTk):
                 );
             """)
 
-            # Actualizar datos básicos
             if nueva_pass:
                 cursor.execute("""
                     UPDATE tblusuario
-                       SET nombre=?, apellido=?, correo=?, telefono=?, estado=?, contrasena=?,
-                           id_rol=?
+                       SET nombre=?, apellido=?, correo=?, telefono=?, estado=?, contrasena=?, id_rol=?
                      WHERE id_usuario=?
                 """, (nom, ape, email, tel, estado, nueva_pass,
                       rol_principal, self.usuario_seleccionado_id))
             else:
                 cursor.execute("""
                     UPDATE tblusuario
-                       SET nombre=?, apellido=?, correo=?, telefono=?, estado=?,
-                           id_rol=?
+                       SET nombre=?, apellido=?, correo=?, telefono=?, estado=?, id_rol=?
                      WHERE id_usuario=?
                 """, (nom, ape, email, tel, estado,
                       rol_principal, self.usuario_seleccionado_id))
 
-            # Reemplazar roles en tblusuario_rol
             cursor.execute("DELETE FROM tblusuario_rol WHERE id_usuario=?",
                            (self.usuario_seleccionado_id,))
             for id_rol in roles_nuevos:
                 cursor.execute("INSERT INTO tblusuario_rol (id_usuario, id_rol) VALUES (?,?)",
                                (self.usuario_seleccionado_id, id_rol))
 
-            # ── NUEVO: reemplazar servicios en tblodontologo_servicio ───────
-            # Siempre se limpia primero: si el usuario deja de ser odontólogo,
-            # sus asignaciones de servicio quedan eliminadas correctamente.
             cursor.execute("DELETE FROM tblodontologo_servicio WHERE id_odontologo=?",
                            (self.usuario_seleccionado_id,))
             if es_odontologo:
@@ -550,9 +658,6 @@ class AdminApp(ctk.CTk):
                         "INSERT OR IGNORE INTO tblodontologo_servicio (id_odontologo, id_tipo) VALUES (?,?)",
                         (self.usuario_seleccionado_id, id_tipo)
                     )
-
-                # ── NUEVO: crear su consultorio propio inmediatamente,
-                # sin esperar a que se reinicie app.py ────────────────────
                 self.asegurar_consultorio_para_doctor(cursor, self.usuario_seleccionado_id)
 
             conn.commit(); conn.close()
@@ -565,26 +670,48 @@ class AdminApp(ctk.CTk):
         except sqlite3.Error as e:
             messagebox.showerror("Error de BD", str(e))
 
+    def _usuario_es_admin(self, id_usuario):
+        """Devuelve True si el usuario actualmente tiene rol 1."""
+        try:
+            conn = self.conectar_db()
+            cur  = conn.cursor()
+            cur.execute("""
+                SELECT 1 FROM tblusuario_rol WHERE id_usuario = ? AND id_rol = 1
+                UNION
+                SELECT 1 FROM tblusuario WHERE id_usuario = ? AND id_rol = 1
+                LIMIT 1
+            """, (id_usuario, id_usuario))
+            es = cur.fetchone() is not None
+            conn.close()
+            return es
+        except sqlite3.Error:
+            return False
+
     # ── ELIMINAR ─────────────────────────────────────────────────────────────
     def eliminar_usuario(self):
         if not self.usuario_seleccionado_id:
             messagebox.showwarning("Atención", "Seleccione un usuario primero."); return
+
+        # ── Protección: no eliminar al último admin ───────────────────────
+        if self._usuario_es_admin(self.usuario_seleccionado_id) and self._contar_admins() <= 1:
+            messagebox.showerror(
+                "Operación Bloqueada",
+                "No puedes eliminar a este usuario porque es el único administrador activo "
+                "del sistema.\n\nAsigna primero otro administrador."
+            )
+            return
+
         if not messagebox.askyesno("Confirmar",
                 f"¿Eliminar usuario ID {self.usuario_seleccionado_id} y TODOS sus registros "
                 "relacionados (citas, tratamientos, facturas, pagos, historial clínico, etc.)?\n"
                 "Esta acción no se puede deshacer."):
             return
+
         try:
             conn = self.conectar_db(); cursor = conn.cursor()
             cursor.execute("PRAGMA foreign_keys = ON;")
             uid = self.usuario_seleccionado_id
 
-            # Borrado en cascada manual respetando foreign keys.
-            # Cubre ambos roles posibles del usuario: paciente (id_usuario)
-            # y odontólogo (id_odontologo), ya que tblusuario no distingue
-            # el rol a nivel de esquema.
-
-            # 1. Registros clínicos (dependen de historial clínico y odontólogo)
             cursor.execute("""
                 DELETE FROM tblregistroclinico
                 WHERE id_odontologo = ?
@@ -595,7 +722,6 @@ class AdminApp(ctk.CTk):
                    )
             """, (uid, uid, uid))
 
-            # 2. Pagos (dependen de factura → tratamiento)
             cursor.execute("""
                 DELETE FROM tblpago
                 WHERE id_factura IN (
@@ -605,7 +731,6 @@ class AdminApp(ctk.CTk):
                 )
             """, (uid, uid))
 
-            # 3. Historial de facturación (depende de factura)
             cursor.execute("""
                 DELETE FROM tblhistorialfacturacion
                 WHERE id_factura IN (
@@ -615,7 +740,6 @@ class AdminApp(ctk.CTk):
                 )
             """, (uid, uid))
 
-            # 4. Facturas (dependen de tratamiento)
             cursor.execute("""
                 DELETE FROM tblfactura
                 WHERE id_tratamiento IN (
@@ -624,7 +748,6 @@ class AdminApp(ctk.CTk):
                 )
             """, (uid, uid))
 
-            # 5. Historial clínico (depende de tratamiento y cita)
             cursor.execute("""
                 DELETE FROM tblhistorialclinico
                 WHERE id_tratamiento IN (
@@ -637,13 +760,11 @@ class AdminApp(ctk.CTk):
                      )
             """, (uid, uid, uid, uid))
 
-            # 6. Tratamientos (paciente u odontólogo)
             cursor.execute("""
                 DELETE FROM tbltratamiento
                 WHERE id_usuario = ? OR id_odontologo = ?
             """, (uid, uid))
 
-            # 7. Historial de modificaciones (depende de cita)
             cursor.execute("""
                 DELETE FROM tblhistorialmodificaciones
                 WHERE id_cita IN (
@@ -652,7 +773,6 @@ class AdminApp(ctk.CTk):
                 )
             """, (uid, uid))
 
-            # 8. Agenda (depende de cita)
             cursor.execute("""
                 DELETE FROM tblagenda
                 WHERE id_cita IN (
@@ -661,26 +781,16 @@ class AdminApp(ctk.CTk):
                 )
             """, (uid, uid))
 
-            # 9. Citas (paciente u odontólogo)
             cursor.execute("""
                 DELETE FROM tblcita
                 WHERE id_usuario = ? OR id_odontologo = ?
             """, (uid, uid))
 
-            # 10. Consultorio propio asignado (si era odontólogo)
-            cursor.execute("DELETE FROM tblodontologo_sala WHERE id_odontologo = ?", (uid,))
-
-            # 11. Asignaciones de servicio (si era odontólogo)
+            cursor.execute("DELETE FROM tblodontologo_sala    WHERE id_odontologo = ?", (uid,))
             cursor.execute("DELETE FROM tblodontologo_servicio WHERE id_odontologo = ?", (uid,))
-
-            # 12. Consentimientos del usuario
-            cursor.execute("DELETE FROM tblconsentimiento WHERE id_usuario = ?", (uid,))
-
-            # 13. Roles adicionales del usuario
-            cursor.execute("DELETE FROM tblusuario_rol WHERE id_usuario = ?", (uid,))
-
-            # 14. El usuario, al final
-            cursor.execute("DELETE FROM tblusuario WHERE id_usuario = ?", (uid,))
+            cursor.execute("DELETE FROM tblconsentimiento     WHERE id_usuario    = ?", (uid,))
+            cursor.execute("DELETE FROM tblusuario_rol        WHERE id_usuario    = ?", (uid,))
+            cursor.execute("DELETE FROM tblusuario            WHERE id_usuario    = ?", (uid,))
 
             conn.commit(); conn.close()
             self.usuario_seleccionado_id = None
