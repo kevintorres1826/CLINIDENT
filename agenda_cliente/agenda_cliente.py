@@ -153,20 +153,6 @@ def obtener_sala_de_doctor(id_doctor):
 
 
 def elegir_doctor_disponible(candidatos, fecha, hora_inicio, hora_fin, excluir_id_cita=None):
-    """
-    De la lista de candidatos (odontólogos que atienden el tratamiento),
-    devuelve el que está libre en ese rango de fecha/hora (en SU PROPIO
-    consultorio) Y tiene MENOS citas ese día, para repartir la carga
-    entre los doctores en vez de siempre asignar al mismo.
-
-    Como cada odontólogo tiene su propio consultorio (1 a 1), la
-    disponibilidad de cada candidato es independiente de los demás:
-    no hay competencia por sala compartida.
-
-    Devuelve un dict {"id_odontologo": ..., "id_sala": ...} del elegido,
-    o None si todos los candidatos están ocupados (o ninguno tiene
-    consultorio asignado todavía).
-    """
     conexion = sqlite3.connect(RUTA_BD)
     conexion.row_factory = sqlite3.Row
     cursor = conexion.cursor()
@@ -178,7 +164,6 @@ def elegir_doctor_disponible(candidatos, fecha, hora_inicio, hora_fin, excluir_i
         id_sala_doc = obtener_sala_de_doctor(id_doc)
 
         if id_sala_doc is None:
-            # Sin consultorio asignado todavía: no se puede agendar con él
             continue
 
         check_sql = """
@@ -187,10 +172,10 @@ def elegir_doctor_disponible(candidatos, fecha, hora_inicio, hora_fin, excluir_i
             WHERE c.fecha = ?
               AND (a.id_estado IS NULL OR a.id_estado != 2)
               AND c.id_odontologo = ?
-              AND ((c.hora_inicio <= ? AND c.hora_fin > ?)
-                   OR (c.hora_inicio < ? AND c.hora_fin >= ?))
+              AND c.hora_inicio < ?
+              AND c.hora_fin    > ?
         """
-        params = [fecha, id_doc, hora_inicio, hora_inicio, hora_fin, hora_fin]
+        params = [fecha, id_doc, hora_fin, hora_inicio]
         if excluir_id_cita:
             check_sql += " AND c.id_cita != ?"
             params.append(excluir_id_cita)
@@ -199,7 +184,6 @@ def elegir_doctor_disponible(candidatos, fecha, hora_inicio, hora_fin, excluir_i
         ocupado = cursor.fetchone()[0] > 0
 
         if not ocupado:
-            # Contar carga total del día para repartir equitativamente
             cursor.execute("""
                 SELECT COUNT(*) FROM tblcita c
                 LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
@@ -214,7 +198,6 @@ def elegir_doctor_disponible(candidatos, fecha, hora_inicio, hora_fin, excluir_i
     if not libres_con_carga:
         return None
 
-    # Menor carga primero; si hay igualdad, orden alfabético (estable)
     libres_con_carga.sort(key=lambda x: (x[0], x[1]))
     mejor = libres_con_carga[0]
     return {"id_odontologo": mejor[2], "id_sala": mejor[3]}
@@ -332,7 +315,6 @@ def acciones_get():
 
         conexion = None
         try:
-            # Todos los odontólogos que atienden este tratamiento
             candidatos = obtener_odontologos_por_tratamiento(tratamiento)
             ids_candidatos = [c['id'] for c in candidatos]
 
@@ -343,16 +325,13 @@ def acciones_get():
             conexion.row_factory = sqlite3.Row
             cursor = conexion.cursor()
 
-            # Cada odontólogo tiene su propio consultorio, así que solo hace
-            # falta revisar las citas DE ESOS DOCTORES (ya no hay choque
-            # de sala compartida entre ellos).
             placeholders = ",".join("?" * len(ids_candidatos))
             sql = f"""
                 SELECT c.hora_inicio, c.hora_fin, c.id_odontologo FROM tblcita c
                 LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
                 WHERE c.fecha = ?
-                  AND (a.id_estado IS NULL OR a.id_estado != 2)
-                  AND c.id_odontologo IN ({placeholders})
+                AND (a.id_estado IS NULL OR a.id_estado != 2)
+                AND c.id_odontologo IN ({placeholders})
             """
             params = [fecha] + ids_candidatos
             if edit_id and edit_id not in ["null", "undefined", ""]:
@@ -361,6 +340,22 @@ def acciones_get():
 
             cursor.execute(sql, params)
             citas_del_dia = cursor.fetchall()
+
+            # ── NUEVO: citas del paciente en esa fecha (sin importar el tratamiento) ──
+            sql_paciente = """
+                SELECT c.hora_inicio, c.hora_fin FROM tblcita c
+                LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
+                WHERE c.fecha = ?
+                AND c.id_usuario = ?
+                AND (a.id_estado IS NULL OR a.id_estado != 2)
+            """
+            params_paciente = [fecha, id_usuario_sesion]
+            if edit_id and edit_id not in ["null", "undefined", ""]:
+                sql_paciente += " AND c.id_cita != ?"
+                params_paciente.append(edit_id)
+
+            cursor.execute(sql_paciente, params_paciente)
+            citas_paciente = cursor.fetchall()
 
             HORARIOS_MAESTROS_BACKEND = [
                 "08:00 AM", "08:45 AM", "09:30 AM", "10:15 AM", "11:00 AM", "11:45 AM",
@@ -371,6 +366,20 @@ def acciones_get():
             for hora_str in HORARIOS_MAESTROS_BACKEND:
                 slot_inicio = datetime.strptime(hora_str, "%I:%M %p")
 
+                # ── NUEVO: ¿el paciente ya tiene algo a esta hora? ──
+                paciente_ocupado = False
+                for fila in citas_paciente:
+                    inicio = datetime.strptime(fila['hora_inicio'], "%H:%M:%S")
+                    fin    = datetime.strptime(fila['hora_fin'],    "%H:%M:%S")
+                    if inicio <= slot_inicio < fin:
+                        paciente_ocupado = True
+                        break
+
+                if paciente_ocupado:
+                    ocupadas.append(hora_str)
+                    continue
+
+                # Lógica original: bloquear solo si TODOS los doctores están ocupados
                 doctores_ocupados_este_slot = set()
                 for fila in citas_del_dia:
                     inicio = datetime.strptime(fila['hora_inicio'], "%H:%M:%S")
@@ -378,9 +387,6 @@ def acciones_get():
                     if inicio <= slot_inicio < fin:
                         doctores_ocupados_este_slot.add(fila['id_odontologo'])
 
-                # Una hora se bloquea SOLO si TODOS los candidatos
-                # están ocupados en ese momento (cada uno en su propio
-                # consultorio, sin interferir entre ellos).
                 if len(doctores_ocupados_este_slot) >= len(ids_candidatos):
                     ocupadas.append(hora_str)
 
@@ -542,22 +548,46 @@ def acciones_post():
 
             # Duración según tratamiento
             nombre_lower = tratamiento_js.lower().strip()
-            if nombre_lower == "ortodoncia":                                    minutos = 60
-            elif nombre_lower in ["blanqueamiento", "endodoncia"]:              minutos = 90
-            elif nombre_lower == "cirugía oral":                                minutos = 120
-            elif nombre_lower == "revisión general":                            minutos = 30
-            else:                                                               minutos = 45
+            if nombre_lower == "ortodoncia":                               minutos = 60
+            elif nombre_lower in ["blanqueamiento", "endodoncia"]:         minutos = 90
+            elif nombre_lower == "cirugía oral":                           minutos = 120
+            elif nombre_lower == "revisión general":                       minutos = 30
+            else:                                                          minutos = 45  # Limpieza dental
 
             hora_fin = (hora_obj + timedelta(minutes=minutos)).strftime("%H:%M:%S")
 
-            # Buscar todos los odontólogos que atienden este tratamiento,
-            # y elegir entre ellos al que esté libre (en su propio
-            # consultorio) y tenga menos carga ese día.
+            # ── Validar que el paciente no tenga otra cita solapada ───────
+            # Usa hora_inicio y hora_fin ya calculadas con la duración real
+            # del servicio, así una Cirugía Oral de 120 min bloquea los
+            # slots que caigan dentro de ese lapso, no solo el de inicio.
+            excluir = edit_id if (edit_id and edit_id not in ["null", "undefined", ""]) else None
+
+            sql_choque_paciente = """
+                SELECT COUNT(*) FROM tblcita c
+                LEFT JOIN tblagenda a ON c.id_cita = a.id_cita
+                WHERE c.fecha      = ?
+                  AND c.id_usuario = ?
+                  AND (a.id_estado IS NULL OR a.id_estado != 2)
+                  AND c.hora_inicio < ?
+                  AND c.hora_fin    > ?
+            """
+            params_choque = [fecha, id_usuario_sesion, hora_fin, hora_inicio]
+            if excluir:
+                sql_choque_paciente += " AND c.id_cita != ?"
+                params_choque.append(excluir)
+
+            cursor.execute(sql_choque_paciente, params_choque)
+            if cursor.fetchone()[0] > 0:
+                return jsonify({
+                    "status":  "error",
+                    "message": "Ya tienes una cita programada en ese horario."
+                })
+
+            # ── Buscar doctor disponible ──────────────────────────────────
             candidatos = obtener_odontologos_por_tratamiento(tratamiento_js)
             if not candidatos:
                 return jsonify({"status": "error", "message": "No hay especialistas para este tratamiento."})
 
-            excluir = edit_id if (edit_id and edit_id not in ["null", "undefined", ""]) else None
             asignacion = elegir_doctor_disponible(
                 candidatos, fecha, hora_inicio, hora_fin, excluir_id_cita=excluir
             )
@@ -571,15 +601,15 @@ def acciones_post():
             id_odontologo = asignacion["id_odontologo"]
             id_sala       = asignacion["id_sala"]
 
-            if edit_id and edit_id not in ["null", "undefined", ""]:
+            if excluir:
                 cursor.execute("""
                     UPDATE tblcita
                     SET fecha = ?, hora_inicio = ?, hora_fin = ?,
                         id_odontologo = ?, id_sala = ?, tratamiento = ?
                     WHERE id_cita = ?
-                """, [fecha, hora_inicio, hora_fin, id_odontologo, id_sala, tratamiento_js, edit_id])
+                """, [fecha, hora_inicio, hora_fin, id_odontologo, id_sala, tratamiento_js, excluir])
                 cursor.execute(
-                    "UPDATE tblagenda SET id_estado = 3 WHERE id_cita = ?", [edit_id]
+                    "UPDATE tblagenda SET id_estado = 3 WHERE id_cita = ?", [excluir]
                 )
             else:
                 cursor.execute("""

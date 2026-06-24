@@ -10,3 +10,8 @@ python -m PyInstaller --noconfirm --onefile --collect-all flask_cors --add-data 
 
 
 2026-07-23
+
+
+juan.D.uvioo@gmail.com
+
+TempPass101

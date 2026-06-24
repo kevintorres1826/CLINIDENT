@@ -744,6 +744,8 @@ if __name__ == '__main__':
     print("\n" + "=" * 60)
     print(" 🚀 SERVIDOR CLÍNICO PYTHON (FLASK) PORTABLE EN MARCHA")
     print(f" 📌 Dirección local activa: http://127.0.0.1:{puerto_final}")
+    print("el link para iniciar es el siguiente:  http://127.0.0.1:5000/web/login/login.html")
     print("=" * 60 + "\n")
 
     app.run(debug=False, port=puerto_final)
+    
