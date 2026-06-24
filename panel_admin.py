@@ -40,7 +40,14 @@ class AdminApp(ctk.CTk):
         self.mostrar_login_cinematico()
 
     def conectar_db(self):
-        return sqlite3.connect(DB_PATH)
+        # timeout=15 -> si la BD está ocupada (locked) por otro proceso/conexión,
+        # espera hasta 15s reintentando en vez de fallar al instante (default: 5s).
+        conn = sqlite3.connect(DB_PATH, timeout=15)
+        # WAL permite que lecturas y escrituras convivan mejor entre procesos
+        # (ej. este panel y el servidor Flask de main.py) reduciendo los locks.
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=15000;")
+        return conn
 
     def asegurar_consultorio_para_doctor(self, cursor, id_odontologo):
         """
@@ -563,7 +570,8 @@ class AdminApp(ctk.CTk):
         if not self.usuario_seleccionado_id:
             messagebox.showwarning("Atención", "Seleccione un usuario primero."); return
         if not messagebox.askyesno("Confirmar",
-                f"¿Eliminar usuario ID {self.usuario_seleccionado_id} y todas sus citas?\n"
+                f"¿Eliminar usuario ID {self.usuario_seleccionado_id} y TODOS sus registros "
+                "relacionados (citas, tratamientos, facturas, pagos, historial clínico, etc.)?\n"
                 "Esta acción no se puede deshacer."):
             return
         try:
@@ -571,32 +579,112 @@ class AdminApp(ctk.CTk):
             cursor.execute("PRAGMA foreign_keys = ON;")
             uid = self.usuario_seleccionado_id
 
-            # Borrar en cascada manual respetando foreign keys
+            # Borrado en cascada manual respetando foreign keys.
+            # Cubre ambos roles posibles del usuario: paciente (id_usuario)
+            # y odontólogo (id_odontologo), ya que tblusuario no distingue
+            # el rol a nivel de esquema.
+
+            # 1. Registros clínicos (dependen de historial clínico y odontólogo)
             cursor.execute("""
                 DELETE FROM tblregistroclinico
-                WHERE id_historial_clinico IN (
-                    SELECT hc.id_historial_clinico FROM tblhistorialclinico hc
-                    JOIN tblcita c ON hc.id_cita = c.id_cita
-                    WHERE c.id_usuario = ?
+                WHERE id_odontologo = ?
+                   OR id_historial_clinico IN (
+                        SELECT hc.id_historial_clinico FROM tblhistorialclinico hc
+                        JOIN tblcita c ON hc.id_cita = c.id_cita
+                        WHERE c.id_usuario = ? OR c.id_odontologo = ?
+                   )
+            """, (uid, uid, uid))
+
+            # 2. Pagos (dependen de factura → tratamiento)
+            cursor.execute("""
+                DELETE FROM tblpago
+                WHERE id_factura IN (
+                    SELECT f.id_factura FROM tblfactura f
+                    JOIN tbltratamiento t ON f.id_tratamiento = t.id_tratamiento
+                    WHERE t.id_usuario = ? OR t.id_odontologo = ?
                 )
-            """, (uid,))
+            """, (uid, uid))
+
+            # 3. Historial de facturación (depende de factura)
+            cursor.execute("""
+                DELETE FROM tblhistorialfacturacion
+                WHERE id_factura IN (
+                    SELECT f.id_factura FROM tblfactura f
+                    JOIN tbltratamiento t ON f.id_tratamiento = t.id_tratamiento
+                    WHERE t.id_usuario = ? OR t.id_odontologo = ?
+                )
+            """, (uid, uid))
+
+            # 4. Facturas (dependen de tratamiento)
+            cursor.execute("""
+                DELETE FROM tblfactura
+                WHERE id_tratamiento IN (
+                    SELECT id_tratamiento FROM tbltratamiento
+                    WHERE id_usuario = ? OR id_odontologo = ?
+                )
+            """, (uid, uid))
+
+            # 5. Historial clínico (depende de tratamiento y cita)
             cursor.execute("""
                 DELETE FROM tblhistorialclinico
-                WHERE id_cita IN (SELECT id_cita FROM tblcita WHERE id_usuario = ?)
-            """, (uid,))
+                WHERE id_tratamiento IN (
+                        SELECT id_tratamiento FROM tbltratamiento
+                        WHERE id_usuario = ? OR id_odontologo = ?
+                     )
+                   OR id_cita IN (
+                        SELECT id_cita FROM tblcita
+                        WHERE id_usuario = ? OR id_odontologo = ?
+                     )
+            """, (uid, uid, uid, uid))
+
+            # 6. Tratamientos (paciente u odontólogo)
+            cursor.execute("""
+                DELETE FROM tbltratamiento
+                WHERE id_usuario = ? OR id_odontologo = ?
+            """, (uid, uid))
+
+            # 7. Historial de modificaciones (depende de cita)
+            cursor.execute("""
+                DELETE FROM tblhistorialmodificaciones
+                WHERE id_cita IN (
+                    SELECT id_cita FROM tblcita
+                    WHERE id_usuario = ? OR id_odontologo = ?
+                )
+            """, (uid, uid))
+
+            # 8. Agenda (depende de cita)
             cursor.execute("""
                 DELETE FROM tblagenda
-                WHERE id_cita IN (SELECT id_cita FROM tblcita WHERE id_usuario = ?)
-            """, (uid,))
-            cursor.execute("DELETE FROM tblcita         WHERE id_usuario = ?", (uid,))
-            cursor.execute("DELETE FROM tblusuario_rol  WHERE id_usuario = ?", (uid,))
-            # ── NUEVO: limpiar también sus asignaciones de servicio ─────────
+                WHERE id_cita IN (
+                    SELECT id_cita FROM tblcita
+                    WHERE id_usuario = ? OR id_odontologo = ?
+                )
+            """, (uid, uid))
+
+            # 9. Citas (paciente u odontólogo)
+            cursor.execute("""
+                DELETE FROM tblcita
+                WHERE id_usuario = ? OR id_odontologo = ?
+            """, (uid, uid))
+
+            # 10. Consultorio propio asignado (si era odontólogo)
+            cursor.execute("DELETE FROM tblodontologo_sala WHERE id_odontologo = ?", (uid,))
+
+            # 11. Asignaciones de servicio (si era odontólogo)
             cursor.execute("DELETE FROM tblodontologo_servicio WHERE id_odontologo = ?", (uid,))
-            cursor.execute("DELETE FROM tblusuario      WHERE id_usuario = ?", (uid,))
+
+            # 12. Consentimientos del usuario
+            cursor.execute("DELETE FROM tblconsentimiento WHERE id_usuario = ?", (uid,))
+
+            # 13. Roles adicionales del usuario
+            cursor.execute("DELETE FROM tblusuario_rol WHERE id_usuario = ?", (uid,))
+
+            # 14. El usuario, al final
+            cursor.execute("DELETE FROM tblusuario WHERE id_usuario = ?", (uid,))
 
             conn.commit(); conn.close()
             self.usuario_seleccionado_id = None
-            messagebox.showinfo("Eliminado", "Usuario y sus registros eliminados correctamente.")
+            messagebox.showinfo("Eliminado", "Usuario y todos sus registros relacionados eliminados correctamente.")
             self.progreso_carga.configure(progress_color="#00ffff")
             self.animar_barra_y_cargar()
 
