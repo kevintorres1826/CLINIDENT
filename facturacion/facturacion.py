@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, session
 import sqlite3
 import os
@@ -187,7 +186,16 @@ def registrar_factura():
             VALUES (?, ?, ?, date('now'))
         """, (id_tratamiento, data["id_cita"], data["diagnostico"]))
  
-        cursor.execute("UPDATE tblagenda SET id_estado = 4 WHERE id_cita = ?", (data["id_cita"],))
+        # ─────────────────────────────────────────────────────────────────
+        # NOTA IMPORTANTE: aquí ANTES había un
+        #     cursor.execute("UPDATE tblagenda SET id_estado = 4 WHERE id_cita = ?", (data["id_cita"],))
+        # que marcaba la cita como "completada" automáticamente al facturar.
+        # Se eliminó a propósito: facturar una cita es un evento de PAGO,
+        # no un evento clínico. El estado de la cita (atendida / no asistió /
+        # programada) lo decide únicamente el odontólogo desde su panel
+        # (ver odontologo.py → /citas/<id>/estado). Esto evita que una cita
+        # quede marcada como "atendida" sin que el doctor lo haya confirmado.
+        # ─────────────────────────────────────────────────────────────────
  
         conn.commit()
         conn.close()
@@ -292,4 +300,3 @@ def historial_facturas():
  
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
- 

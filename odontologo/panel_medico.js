@@ -1,4 +1,3 @@
-
 const API_URL = "/odontologo";
  
 // ─── NAVEGACIÓN ENTRE VISTAS ───
@@ -89,7 +88,10 @@ function renderAgenda() {
                     <div class="detalle">🏥 ${c.nombre_sala} &nbsp;|&nbsp; 📅 ${formatFecha(c.fecha)}</div>
                     ${motivoHtml}
                 </div>
-                ${badgeEstado(c.estado)}
+                <div class="badges-cita">
+                    ${badgeEstado(c.estado)}
+                    ${badgeFacturada(c.facturada)}
+                </div>
                 <div class="acciones-cita">
                     ${botonesEstado(c.id_cita, c.estado, 'renderAgenda')}
                 </div>
@@ -115,6 +117,17 @@ function badgeEstado(estado) {
         return `<span class="badge badge-cancelada">❌ Cancelada</span>`;
     }
     return `<span class="badge badge-pendiente">⏳ Pendiente</span>`;
+}
+ 
+// ── NUEVO: badge independiente que indica si la cita ya tiene factura
+// asociada. Es puramente informativo para el doctor (le dice si ya se
+// le cobró al paciente) y NO tiene relación con el estado clínico de
+// la cita — facturar ya no marca automáticamente la cita como atendida.
+function badgeFacturada(facturada) {
+    if (facturada) {
+        return `<span class="badge badge-facturada">💳 Facturada</span>`;
+    }
+    return `<span class="badge badge-sin-facturar">⏳ Sin facturar</span>`;
 }
  
 // Genera los botones de acción según el estado actual de la cita.
@@ -316,7 +329,10 @@ function filtrarTodas(estado) {
                     </div>
                     ${motivoHtml}
                 </div>
-                ${badgeEstado(c.estado)}
+                <div class="badges-cita">
+                    ${badgeEstado(c.estado)}
+                    ${badgeFacturada(c.facturada)}
+                </div>
                 <div class="acciones-cita">
                     ${botonesEstado(c.id_cita, c.estado, 'filtrarTodas', estado)}
                 </div>
@@ -359,4 +375,3 @@ function cerrarSesionMedico() {
         mostrarToast("❌ Error de conexión al cerrar sesión");
     });
 }
- 

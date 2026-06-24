@@ -1,4 +1,3 @@
-
 import sqlite3
 from flask import Blueprint, jsonify, request, session
  
@@ -80,6 +79,11 @@ def citas_por_fecha():
  
     conn = get_db()
     try:
+        # ── NUEVO: se agregó LEFT JOIN hasta tbltratamiento/tblfactura para
+        # poder calcular el campo `facturada` (1 si la cita ya tiene una
+        # factura emitida, 0 si no). Esto es puramente informativo: NO
+        # afecta ni reemplaza el estado clínico de la cita (`estado`), que
+        # sigue siendo controlado únicamente por el odontólogo.
         sql = """
             SELECT c.id_cita,
                    c.fecha,
@@ -88,12 +92,15 @@ def citas_por_fecha():
                    u.nombre   || ' ' || u.apellido AS paciente,
                    s.nombre_sala,
                    COALESCE(e.nombre_estado, 'programada') AS estado,
-                   a.motivo_cancelacion
+                   a.motivo_cancelacion,
+                   CASE WHEN f.id_factura IS NOT NULL THEN 1 ELSE 0 END AS facturada
             FROM   tblcita c
             JOIN   tblusuario  u ON u.id_usuario = c.id_usuario
             JOIN   tblsala     s ON s.id_sala    = c.id_sala
-            LEFT JOIN tblagenda     a ON a.id_cita   = c.id_cita
-            LEFT JOIN tblestadocita e ON e.id_estado = a.id_estado
+            LEFT JOIN tblagenda      a ON a.id_cita        = c.id_cita
+            LEFT JOIN tblestadocita  e ON e.id_estado      = a.id_estado
+            LEFT JOIN tbltratamiento t ON t.id_cita        = c.id_cita
+            LEFT JOIN tblfactura     f ON f.id_tratamiento  = t.id_tratamiento
             WHERE  c.id_odontologo = ?
               AND  c.fecha = {}
             ORDER  BY c.hora_inicio
@@ -203,6 +210,7 @@ def todas_las_citas():
  
     conn = get_db()
     try:
+        # ── NUEVO: mismo agregado de `facturada` que en citas_por_fecha().
         sql = """
             SELECT c.id_cita,
                    c.fecha,
@@ -211,12 +219,15 @@ def todas_las_citas():
                    u.nombre || ' ' || u.apellido AS paciente,
                    s.nombre_sala,
                    COALESCE(e.nombre_estado, 'programada') AS estado,
-                   a.motivo_cancelacion
+                   a.motivo_cancelacion,
+                   CASE WHEN f.id_factura IS NOT NULL THEN 1 ELSE 0 END AS facturada
             FROM   tblcita c
-            JOIN   tblusuario     u ON u.id_usuario = c.id_usuario
-            JOIN   tblsala        s ON s.id_sala    = c.id_sala
-            LEFT JOIN tblagenda   a ON a.id_cita    = c.id_cita
-            LEFT JOIN tblestadocita e ON e.id_estado = a.id_estado
+            JOIN   tblusuario       u ON u.id_usuario       = c.id_usuario
+            JOIN   tblsala          s ON s.id_sala          = c.id_sala
+            LEFT JOIN tblagenda      a ON a.id_cita         = c.id_cita
+            LEFT JOIN tblestadocita  e ON e.id_estado       = a.id_estado
+            LEFT JOIN tbltratamiento t ON t.id_cita         = c.id_cita
+            LEFT JOIN tblfactura     f ON f.id_tratamiento   = t.id_tratamiento
             WHERE  c.id_odontologo = ?
         """
         params = [id_usuario]
@@ -293,4 +304,3 @@ def historial_paciente(id_paciente):
         })
     finally:
         conn.close()
- 

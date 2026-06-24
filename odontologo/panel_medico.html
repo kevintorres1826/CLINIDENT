@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -45,6 +44,42 @@
             background: rgba(239, 68, 68, 0.15);
             color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+ 
+        /* ─── NUEVO: badges de estado de facturación (independientes del
+           estado clínico de la cita). Reutilizan el formato visual de
+           .badge ya existente en panel_medico.css (padding, radius, etc.);
+           si tu .badge base no define esas propiedades, descomenta el
+           bloque base de abajo. ─── */
+ 
+        .badges-cita {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+ 
+        /*
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        */
+ 
+        .badge-facturada {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+ 
+        .badge-sin-facturar {
+            background: rgba(148, 163, 184, 0.15);
+            color: #64748b;
+            border: 1px solid rgba(148, 163, 184, 0.35);
         }
     </style>
 </head>
@@ -152,4 +187,3 @@
     <script src="panel_medico.js"></script>
 </body>
 </html>
- 
