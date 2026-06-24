@@ -273,37 +273,67 @@ function verDetalleCita(idCita) {
 function cerrarModal() {
     document.getElementById("modalOverlay").style.display = "none";
 }
+
+
  
 // --- EXPORTACIONES ---
+// --- EXPORTACIONES ---
+function obtenerCitasFiltradas() {
+    const busqueda = (document.getElementById("buscador")?.value || "").toLowerCase();
+    return pacientes.filter(c => {
+        const coincideTexto =
+            c.paciente.toLowerCase().includes(busqueda) ||
+            c.odontologo.toLowerCase().includes(busqueda) ||
+            (c.sala || "").toLowerCase().includes(busqueda);
+
+        const coincideEstado =
+            filtroEstadoActivo === "todas" ||
+            (c.estado || "").toLowerCase() === filtroEstadoActivo.toLowerCase();
+
+        let coincideFecha = true;
+        if (filtroFecha.diaExacto) {
+            coincideFecha = c.fecha === filtroFecha.diaExacto;
+        } else if (filtroFecha.inicio && filtroFecha.fin) {
+            coincideFecha = c.fecha >= filtroFecha.inicio && c.fecha <= filtroFecha.fin;
+        }
+
+        return coincideTexto && coincideEstado && coincideFecha;
+    });
+}
+
 function exportarExcel() {
-    const datos = pacientes.map(p => ({
+    const datos = obtenerCitasFiltradas().map(p => ({
         Paciente:   p.paciente,
-        Odontólogo: p.odontologo || "—",
-        Sala:       p.sala       || "—",
-        Fecha:      p.fecha      || "—",
-        Horario:    p.horario    || "—",
-        Estado:     p.estado     || "—",
+        Odontólogo: p.odontologo  || "—",
+        Sala:       p.sala        || "—",
+        Fecha:      p.fecha       || "—",
+        Horario:    p.horario     || "—",
+        Servicio:   p.servicio    || "—",
+        Estado:     p.estado      || "—",
+        Pago:       p.estado_pago || "—",
     }));
     const ws = XLSX.utils.json_to_sheet(datos);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Historial de Citas");
     XLSX.writeFile(wb, "historial_clinident.xlsx");
 }
- 
+
 function exportarPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.text("Historial Clínico de Citas – Clinident", 14, 16);
     doc.autoTable({
         startY: 22,
-        head: [["Paciente", "Odontólogo", "Sala", "Fecha", "Horario", "Estado"]],
-        body: pacientes.map(p => [
+        head: [["Paciente", "Odontólogo", "Sala", "Fecha", "Horario", "Servicio", "Estado", "Pago"]],
+        body: obtenerCitasFiltradas().map(p => [
             p.paciente,
-            p.odontologo || "—",
-            p.sala       || "—",
-            p.fecha      || "—",
-            p.horario    || "—",
-            p.estado     || "—",
+            p.odontologo  || "—",
+            p.sala        || "—",
+            p.fecha       || "—",
+            p.horario     || "—",
+            p.servicio    || "—",
+            p.estado      || "—",
+            p.estado_pago || "—",
         ]),
         styles:     { fontSize: 9 },
         headStyles: { fillColor: [45, 140, 240] },

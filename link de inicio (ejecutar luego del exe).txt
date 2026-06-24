@@ -15,3 +15,7 @@ python -m PyInstaller --noconfirm --onefile --collect-all flask_cors --add-data 
 juan.D.uvioo@gmail.com
 
 TempPass101
+
+python -m PyInstaller --noconfirm --onefile --collect-all flask_cors --add-data "login;login" --add-data "agenda_cliente;agenda_cliente" --add-data "odontologo;odontologo" --add-data "recepcionista;recepcionista" --add-data "facturacion;facturacion" --add-data "historial;historial"
+
+python -m PyInstaller --noconfirm --onefile --windowed --collect-all customtkinter --copy-metadata customtkinter panel_admin.py
