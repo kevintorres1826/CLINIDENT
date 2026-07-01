@@ -199,7 +199,7 @@ function doLogin() {
         if (d.bloqueado && d.tiempo_restante) {
           activarTemporizador(d.tiempo_restante);
  
-          // Mostrar proactivamente el enlace de recuperar contraseña
+          
           const enlaceRecuperar = document.getElementById('enlace-recuperar');
           if (enlaceRecuperar) enlaceRecuperar.style.display = 'block';
         }
@@ -228,7 +228,7 @@ function selRecov(m) {
  
   document.getElementById('rv-ico').className = (isEmail ? 'ti ti-mail' : 'ti ti-device-mobile') + ' ico';
 }
- 
+ // validacion en caso de que el usuario no ingrese un correo o un numero de telefono
 function sendRecov() {
   const val = document.getElementById('rv-inp').value.trim();
   if (!val) { alert('⚠ Ingresa el dato solicitado.'); return; }
@@ -360,13 +360,13 @@ function doReg() {
     return;
   }
  
-  // ── 2. Mostrar Loader ──
+  // ── 2. Mostrar Loader despues de registrarse ──
   document.getElementById('btn-reg').style.display   = 'none';
   document.getElementById('reg-loader').style.display = 'flex';
  
   const urlBase = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://127.0.0.1:5000';
  
-  // ── 3. Petición al Backend (Python) ──
+  // ── 3. Envia solicitud al backend de los campos rellenados ──
   fetch(`${urlBase}/Registro/registro`, {
     method: 'POST',
     credentials: 'include',
@@ -377,11 +377,10 @@ function doReg() {
     .then(d => {
       // Ocultar Loader
       document.getElementById('reg-loader').style.display = 'none';
- 
+      // Valida los datos enviados si fueron correctos
       if (d.status === 'success') {
         // Todo perfecto: avanzamos de paso.
-        // IMPORTANTE: en este punto el backend NO ha guardado nada en la BD,
-        // solo dejó los datos pendientes en sesión. Falta verificar el código.
+        // IMPORTANTE: en este punto el backend NO ha guardado nada en la BD
         document.getElementById('r-code').value = '';
         document.getElementById('reg-slider').classList.add('to-step2');
       } else {
